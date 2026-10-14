@@ -3,6 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import useDocumentTitle from '../hooks/useDocumentTitle';
 import toast from 'react-hot-toast';
+import EventViserLogo from '../components/common/EventViserLogo';
 
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
@@ -173,11 +174,9 @@ const RegisterPage = () => {
       <div className="w-full max-w-[440px]">
         {/* Header */}
         <div className="text-center mb-8">
-          <div className="mx-auto w-14 h-14 bg-primary-100 dark:bg-primary-900/30 rounded-2xl flex items-center justify-center mb-4">
-            <svg className="w-7 h-7 text-primary-600 dark:text-primary-400" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" d="M18 7.5v3m0 0v3m0-3h3m-3 0h-3m-2.25-4.125a3.375 3.375 0 1 1-6.75 0 3.375 3.375 0 0 1 6.75 0ZM3 19.235v-.11a6.375 6.375 0 0 1 12.75 0v.109A12.318 12.318 0 0 1 9.374 21c-2.331 0-4.512-.645-6.374-1.766Z" />
-            </svg>
-          </div>
+          <Link to="/" className="inline-block mb-3 hover:opacity-95 transition-opacity" aria-label="EventViser Home">
+            <EventViserLogo size="lg" />
+          </Link>
           <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
             Create your account
           </h1>

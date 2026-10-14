@@ -179,13 +179,17 @@ const HomePage = () => {
 
         <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20 sm:py-28 lg:py-32">
           <div className="text-center max-w-3xl mx-auto">
+            <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-white/15 backdrop-blur-md border border-white/20 text-white text-xs font-semibold uppercase tracking-wider mb-6 shadow-sm">
+              <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+              EventViser Platform
+            </div>
+
             <h1 className="text-4xl sm:text-5xl lg:text-6xl font-extrabold text-white tracking-tight">
-              Discover Amazing Events{' '}
-              <span className="text-primary-200">Near You</span>
+              Campus Event Operations <br />
+              <span className="text-primary-200">Reimagined with EventViser</span>
             </h1>
             <p className="mt-6 text-lg sm:text-xl text-primary-100 max-w-2xl mx-auto">
-              Browse, register, and manage events all in one place.
-              Find your next unforgettable experience.
+              Discover, register, and organize impactful university events with real-time analytics, QR tickets, and automated capacity controls.
             </p>
 
             {/* Search Bar */}
@@ -421,7 +425,7 @@ const HomePage = () => {
               Ready to Host Your Own Event?
             </h2>
             <p className="mt-4 text-lg text-primary-100">
-              Join thousands of organizers who use EventBooking to create, manage,
+              Join thousands of campus organizers who use EventViser to create, manage,
               and promote their events effortlessly.
             </p>
             <div className="mt-8 flex flex-col sm:flex-row items-center justify-center gap-4">

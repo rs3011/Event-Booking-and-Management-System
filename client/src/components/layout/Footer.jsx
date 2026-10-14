@@ -1,4 +1,5 @@
 import { Link } from 'react-router-dom';
+import EventViserLogo from '../common/EventViserLogo';
 
 const Footer = () => {
   const currentYear = new Date().getFullYear();
@@ -9,14 +10,11 @@ const Footer = () => {
         <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
           {/* Brand */}
           <div>
-            <Link to="/" className="flex items-center gap-2 text-xl font-bold text-primary-600 dark:text-primary-400">
-              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-6 h-6">
-                <path strokeLinecap="round" strokeLinejoin="round" d="M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 0 1 2.25-2.25h13.5A2.25 2.25 0 0 1 21 7.5v11.25m-18 0A2.25 2.25 0 0 0 5.25 21h13.5A2.25 2.25 0 0 0 21 18.75m-18 0v-7.5A2.25 2.25 0 0 1 5.25 9h13.5A2.25 2.25 0 0 1 21 11.25v7.5" />
-              </svg>
-              EventBooking
+            <Link to="/" className="inline-block" aria-label="EventViser Home">
+              <EventViserLogo size="md" />
             </Link>
             <p className="mt-3 text-sm text-gray-500 dark:text-gray-400 max-w-xs">
-              Discover and book amazing events near you. From conferences to concerts, find your next experience.
+              Campus event operations platform. Discover, register, and organize impactful university events with real-time analytics.
             </p>
           </div>
 
@@ -53,7 +51,7 @@ const Footer = () => {
                 <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-4 h-4 shrink-0">
                   <path strokeLinecap="round" strokeLinejoin="round" d="M21.75 6.75v10.5a2.25 2.25 0 0 1-2.25 2.25h-15a2.25 2.25 0 0 1-2.25-2.25V6.75m19.5 0A2.25 2.25 0 0 0 19.5 4.5h-15a2.25 2.25 0 0 0-2.25 2.25m19.5 0v.243a2.25 2.25 0 0 1-1.07 1.916l-7.5 4.615a2.25 2.25 0 0 1-2.36 0L3.32 8.91a2.25 2.25 0 0 1-1.07-1.916V6.75" />
                 </svg>
-                info@eventbooking.com
+                support@eventviser.com
               </li>
               <li className="flex items-center gap-2 text-sm text-gray-500 dark:text-gray-400">
                 <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-4 h-4 shrink-0">
@@ -83,10 +81,10 @@ const Footer = () => {
         {/* Bottom bar */}
         <div className="mt-10 pt-6 border-t border-gray-200 dark:border-gray-800 flex flex-col items-center gap-2">
           <p className="text-center text-sm text-gray-400 dark:text-gray-500">
-            &copy; {currentYear} Event Booking System. All rights reserved.
+            &copy; {currentYear} EventViser. All rights reserved.
           </p>
           <p className="text-center text-sm text-gray-400 dark:text-gray-500">
-            A full-stack platform for campus events, workshops, and conferences.
+            The intelligent campus event operations and ticketing platform.
           </p>
         </div>
       </div>

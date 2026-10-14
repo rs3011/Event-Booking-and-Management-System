@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Outlet, NavLink, useLocation } from 'react-router-dom';
 import Navbar from './Navbar';
+import EventViserLogo from '../common/EventViserLogo';
 
 const sidebarLinks = [
   {
@@ -101,8 +102,9 @@ const AdminLayout = () => {
             {/* Sidebar header with admin badge */}
             <div className="flex items-center justify-between p-4 border-b border-gray-200 dark:border-gray-800 lg:border-b-0">
               <div className="flex items-center gap-2">
-                <h2 className="text-sm font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wider">
-                  Admin Panel
+                <EventViserLogo size="sm" showText={false} />
+                <h2 className="text-sm font-bold text-gray-700 dark:text-gray-300 tracking-wide">
+                  Admin Console
                 </h2>
                 <span className="px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-wider bg-purple-100 text-purple-700 dark:bg-purple-900/40 dark:text-purple-300 rounded">
                   Admin

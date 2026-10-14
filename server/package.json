@@ -1,7 +1,7 @@
 {
   "name": "server",
   "version": "1.0.0",
-  "description": "REST API for the Event Booking System — a MERN-stack event management and ticketing platform with role-based access control, atomic capacity management, and JWT authentication.",
+  "description": "REST API for EventViser — a MERN-stack campus event management and ticketing platform with role-based access control, atomic capacity management, and JWT authentication.",
   "main": "index.js",
   "scripts": {
     "dev": "nodemon index.js",
@@ -10,6 +10,7 @@
     "test": "node --test --test-concurrency=1 tests/**/*.test.js"
   },
   "keywords": [
+    "eventviser",
     "event-booking",
     "express",
     "mongodb",
@@ -18,7 +19,7 @@
     "rest-api",
     "mern"
   ],
-  "author": "Event Booking System Contributors",
+  "author": "EventViser Contributors",
   "license": "MIT",
   "type": "commonjs",
   "dependencies": {

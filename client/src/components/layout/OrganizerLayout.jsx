@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Outlet, NavLink, useLocation } from 'react-router-dom';
 import Navbar from './Navbar';
+import EventViserLogo from '../common/EventViserLogo';
 
 const sidebarLinks = [
   {
@@ -103,9 +104,12 @@ const OrganizerLayout = () => {
           <div className="flex flex-col h-full">
             {/* Sidebar header */}
             <div className="flex items-center justify-between p-4 border-b border-gray-200 dark:border-gray-800 lg:border-b-0">
-              <h2 className="text-sm font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wider">
-                Organizer Panel
-              </h2>
+              <div className="flex items-center gap-2">
+                <EventViserLogo size="sm" showText={false} />
+                <h2 className="text-sm font-bold text-gray-700 dark:text-gray-300 tracking-wide">
+                  Organizer Hub
+                </h2>
+              </div>
               <button
                 onClick={() => setSidebarOpen(false)}
                 className="lg:hidden p-1 rounded-lg text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"

@@ -4,7 +4,7 @@ const SECTIONS = [
   {
     title: '1. Acceptance of Terms',
     content:
-      'By creating an account or using EventBooking, you agree to be bound by these Terms of Service. If you do not agree to these terms, please do not use our platform.',
+      'By creating an account or using EventViser, you agree to be bound by these Terms of Service. If you do not agree to these terms, please do not use our platform.',
   },
   {
     title: '2. Account Responsibilities',
@@ -14,7 +14,7 @@ const SECTIONS = [
   {
     title: '3. Event Registration',
     content:
-      'When you register for an event through our platform, you agree to abide by the event organizer\'s rules and policies. EventBooking acts as a facilitator and is not responsible for the content, quality, or safety of third-party events.',
+      'When you register for an event through our platform, you agree to abide by the event organizer\'s rules and policies. EventViser acts as a facilitator and is not responsible for the content, quality, or safety of third-party events.',
   },
   {
     title: '4. Organizer Obligations',
@@ -24,7 +24,7 @@ const SECTIONS = [
   {
     title: '5. Cancellation & Refunds',
     content:
-      'Cancellation and refund policies are determined by individual event organizers. EventBooking is not liable for refund disputes between attendees and organizers.',
+      'Cancellation and refund policies are determined by individual event organizers. EventViser is not liable for refund disputes between attendees and organizers.',
   },
   {
     title: '6. Prohibited Conduct',
@@ -34,12 +34,12 @@ const SECTIONS = [
   {
     title: '7. Intellectual Property',
     content:
-      'All content, trademarks, and materials on EventBooking are the property of their respective owners. You may not reproduce, distribute, or create derivative works without prior written consent.',
+      'All content, trademarks, and materials on EventViser are the property of their respective owners. You may not reproduce, distribute, or create derivative works without prior written consent.',
   },
   {
     title: '8. Limitation of Liability',
     content:
-      'EventBooking is provided "as is" without warranties of any kind. We shall not be liable for any indirect, incidental, or consequential damages arising from your use of the platform.',
+      'EventViser is provided "as is" without warranties of any kind. We shall not be liable for any indirect, incidental, or consequential damages arising from your use of the platform.',
   },
   {
     title: '9. Changes to Terms',

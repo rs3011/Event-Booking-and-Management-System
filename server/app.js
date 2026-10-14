@@ -101,7 +101,7 @@ app.use(
   swaggerUi.serve,
   swaggerUi.setup(swaggerSpec, {
     customCss: '.swagger-ui .topbar { display: none }',
-    customSiteTitle: 'Event Booking System — API Docs',
+    customSiteTitle: 'EventViser API — Documentation',
   })
 );
 
@@ -112,7 +112,7 @@ app.get('/', (_req, res) => {
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Event Booking System API</title>
+  <title>EventViser API</title>
   <style>
     *{margin:0;padding:0;box-sizing:border-box}
     body{
@@ -209,14 +209,14 @@ app.get('/', (_req, res) => {
 <body>
   <div class="container">
     <div class="ticket-icon"><span>TICKET</span></div>
-    <h1>Event Booking System</h1>
+    <h1>EventViser API</h1>
     <p class="version">v${version}</p>
     <div class="links">
       <a href="/api-docs" class="btn btn-primary">API Documentation</a>
       <a href="/api/health" class="btn btn-secondary">Health Check</a>
     </div>
     <footer class="sign">
-      Event Booking System API &copy; ${new Date().getFullYear()}
+      EventViser API &copy; ${new Date().getFullYear()}
     </footer>
   </div>
 </body>

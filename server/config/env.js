@@ -11,7 +11,7 @@ const env = {
   SMTP_SECURE: process.env.SMTP_SECURE === 'true' || parseInt(process.env.SMTP_PORT, 10) === 465,
   SMTP_USER: process.env.SMTP_USER,
   SMTP_PASS: process.env.SMTP_PASS,
-  SMTP_FROM_NAME: process.env.SMTP_FROM_NAME || 'EventBooking',
+  SMTP_FROM_NAME: process.env.SMTP_FROM_NAME || 'EventViser',
   SMTP_FROM_EMAIL: process.env.SMTP_FROM_EMAIL || process.env.SMTP_USER,
   UPLOAD_MAX_SIZE: parseInt(process.env.UPLOAD_MAX_SIZE, 10) || 5242880,
 };
@@ -25,12 +25,10 @@ if (isProduction) {
     );
   }
 
-  if (!env.SMTP_USER) {
-    throw new Error('SMTP_USER must be set in production');
-  }
-
-  if (!env.SMTP_PASS) {
-    throw new Error('SMTP_PASS must be set in production');
+  if (!env.SMTP_USER || !env.SMTP_PASS) {
+    console.warn(
+      '⚠️ [WARNING] SMTP_USER or SMTP_PASS not set in production. Outbound emails will be simulated to prevent server boot failure.'
+    );
   }
 }
 

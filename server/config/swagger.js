@@ -5,7 +5,7 @@ const options = {
   definition: {
     openapi: '3.0.0',
     info: {
-      title: 'Event Booking System API',
+      title: 'EventViser API',
       version,
       description:
         'A full-stack MERN event booking platform with role-based access control, atomic capacity management, email notifications, QR code tickets, and a security-hardened REST API.',

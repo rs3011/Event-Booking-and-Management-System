@@ -451,7 +451,10 @@ const ActionsDropdown = ({ event, isOpen, onToggle, onAction, isLoading, dropdow
   return (
     <div className="relative inline-block" ref={dropdownRef}>
       <button
-        onClick={onToggle}
+        onClick={(e) => {
+          e.stopPropagation();
+          onToggle();
+        }}
         disabled={isLoading}
         className="p-2 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200
                    hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors disabled:opacity-50"
