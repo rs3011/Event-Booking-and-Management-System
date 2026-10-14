@@ -12,7 +12,11 @@ const env = {
   SMTP_USER: process.env.SMTP_USER,
   SMTP_PASS: process.env.SMTP_PASS,
   SMTP_FROM_NAME: process.env.SMTP_FROM_NAME || 'EventViser',
-  SMTP_FROM_EMAIL: process.env.SMTP_FROM_EMAIL || process.env.SMTP_USER,
+  SMTP_FROM_EMAIL:
+    process.env.SMTP_FROM_EMAIL ||
+    (process.env.SMTP_HOST && process.env.SMTP_HOST.includes('resend')
+      ? 'onboarding@resend.dev'
+      : process.env.SMTP_USER),
   UPLOAD_MAX_SIZE: parseInt(process.env.UPLOAD_MAX_SIZE, 10) || 5242880,
 };
 

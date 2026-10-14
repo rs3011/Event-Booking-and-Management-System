@@ -24,7 +24,16 @@ async function testEmail() {
     }
 
     console.log('\nStep 2: Sending test ticket confirmation email...');
-    const testRecipient = process.argv[2] || env.SMTP_USER;
+    const testRecipient =
+      process.argv[2] ||
+      (env.SMTP_USER && env.SMTP_USER.includes('@') ? env.SMTP_USER : null);
+
+    if (!testRecipient) {
+      console.log('ℹ️  No test recipient specified. Run with an email argument to test dispatch:');
+      console.log('   node scripts/testEmailService.js your-email@example.com');
+      console.log('✅ SMTP connection and credentials verified successfully.');
+      return;
+    }
     const html = generateConfirmationEmail({
       userName: 'Test Student',
       eventTitle: 'Campus Hackathon 2026',
