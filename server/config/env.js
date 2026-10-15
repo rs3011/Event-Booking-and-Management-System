@@ -1,3 +1,26 @@
+// Sanitize Cloudinary environment variables early to prevent malformed URL crashes
+if (process.env.CLOUDINARY_URL) {
+  let cleanUrl = process.env.CLOUDINARY_URL.trim();
+  if (cleanUrl.startsWith('CLOUDINARY_URL=')) {
+    cleanUrl = cleanUrl.replace(/^CLOUDINARY_URL=/, '').trim();
+  }
+  cleanUrl = cleanUrl.replace(/[<>]/g, '');
+  if (cleanUrl.startsWith('cloudinary://')) {
+    process.env.CLOUDINARY_URL = cleanUrl;
+  } else {
+    delete process.env.CLOUDINARY_URL;
+  }
+}
+if (process.env.CLOUDINARY_CLOUD_NAME) {
+  process.env.CLOUDINARY_CLOUD_NAME = process.env.CLOUDINARY_CLOUD_NAME.trim().replace(/[<>]/g, '');
+}
+if (process.env.CLOUDINARY_API_KEY) {
+  process.env.CLOUDINARY_API_KEY = process.env.CLOUDINARY_API_KEY.trim().replace(/[<>]/g, '');
+}
+if (process.env.CLOUDINARY_API_SECRET) {
+  process.env.CLOUDINARY_API_SECRET = process.env.CLOUDINARY_API_SECRET.trim().replace(/[<>]/g, '');
+}
+
 const env = {
   PORT: process.env.PORT || 5000,
   NODE_ENV: process.env.NODE_ENV || 'development',
@@ -18,6 +41,10 @@ const env = {
       ? 'onboarding@resend.dev'
       : process.env.SMTP_USER),
   UPLOAD_MAX_SIZE: parseInt(process.env.UPLOAD_MAX_SIZE, 10) || 5242880,
+  CLOUDINARY_CLOUD_NAME: process.env.CLOUDINARY_CLOUD_NAME,
+  CLOUDINARY_API_KEY: process.env.CLOUDINARY_API_KEY,
+  CLOUDINARY_API_SECRET: process.env.CLOUDINARY_API_SECRET,
+  CLOUDINARY_URL: process.env.CLOUDINARY_URL,
 };
 
 const isProduction = env.NODE_ENV === 'production';

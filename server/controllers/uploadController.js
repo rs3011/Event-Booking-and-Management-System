@@ -13,32 +13,64 @@ const MIME_TO_EXT = {
   'image/gif': 'gif',
 };
 
+const sanitizeCloudinaryConfig = () => {
+  let cloudName = process.env.CLOUDINARY_CLOUD_NAME;
+  let apiKey = process.env.CLOUDINARY_API_KEY;
+  let apiSecret = process.env.CLOUDINARY_API_SECRET;
+  let url = process.env.CLOUDINARY_URL;
+
+  if (url) {
+    url = url.trim();
+    if (url.startsWith('CLOUDINARY_URL=')) {
+      url = url.replace(/^CLOUDINARY_URL=/, '').trim();
+    }
+    url = url.replace(/[<>]/g, '');
+  }
+
+  if (cloudName) cloudName = cloudName.trim().replace(/[<>]/g, '');
+  if (apiKey) apiKey = apiKey.trim().replace(/[<>]/g, '');
+  if (apiSecret) apiSecret = apiSecret.trim().replace(/[<>]/g, '');
+
+  return { cloudName, apiKey, apiSecret, url };
+};
+
 const isCloudinaryConfigured = () => {
+  const { cloudName, apiKey, apiSecret, url } = sanitizeCloudinaryConfig();
   return Boolean(
-    process.env.CLOUDINARY_URL ||
-    (process.env.CLOUDINARY_CLOUD_NAME &&
-     process.env.CLOUDINARY_API_KEY &&
-     process.env.CLOUDINARY_API_SECRET)
+    (cloudName && apiKey && apiSecret) ||
+    (url && url.startsWith('cloudinary://'))
   );
 };
 
+let isCloudinaryInitialized = false;
+
 const getCloudinaryClient = () => {
-  if (process.env.CLOUDINARY_URL) {
-    cloudinary.config();
+  if (isCloudinaryInitialized) {
     return cloudinary;
   }
-  if (
-    process.env.CLOUDINARY_CLOUD_NAME &&
-    process.env.CLOUDINARY_API_KEY &&
-    process.env.CLOUDINARY_API_SECRET
-  ) {
+
+  const { cloudName, apiKey, apiSecret, url } = sanitizeCloudinaryConfig();
+
+  // Prefer explicit credentials
+  if (cloudName && apiKey && apiSecret) {
     cloudinary.config({
-      cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
-      api_key: process.env.CLOUDINARY_API_KEY,
-      api_secret: process.env.CLOUDINARY_API_SECRET,
+      cloud_name: cloudName,
+      api_key: apiKey,
+      api_secret: apiSecret,
+      secure: true,
     });
+    isCloudinaryInitialized = true;
     return cloudinary;
   }
+
+  // Fallback to cleaned CLOUDINARY_URL
+  if (url && url.startsWith('cloudinary://')) {
+    process.env.CLOUDINARY_URL = url;
+    cloudinary.config({ secure: true });
+    isCloudinaryInitialized = true;
+    return cloudinary;
+  }
+
   return null;
 };
 
@@ -56,11 +88,14 @@ const uploadImage = async (req, res, next) => {
     // Cloudinary storage for production
     if (isCloudinaryConfigured()) {
       const client = getCloudinaryClient();
+      if (!client) {
+        throw new AppError('Cloudinary client failed to initialize', 500);
+      }
       const uploadPromise = new Promise((resolve, reject) => {
         const stream = client.uploader.upload_stream(
           { folder: 'campus_events', resource_type: 'image' },
           (error, result) => {
-            if (error) return reject(error);
+            if (error) return reject(new AppError(`Cloudinary upload failed: ${error.message}`, 500));
             resolve(result);
           }
         );
@@ -97,11 +132,13 @@ const uploadImage = async (req, res, next) => {
  */
 const deleteImage = async (req, res, next) => {
   try {
-    const rawFilename = req.params.filename;
+    let rawFilename = req.params.filename;
+    rawFilename = rawFilename.replace(/^\/+/, '');
 
-    if (isCloudinaryConfigured() && rawFilename.startsWith('campus_events/')) {
+    if (isCloudinaryConfigured() && (rawFilename.startsWith('campus_events/') || rawFilename.includes('/'))) {
       const client = getCloudinaryClient();
-      await client.uploader.destroy(rawFilename);
+      const publicId = rawFilename.replace(/\.[^/.]+$/, '');
+      await client.uploader.destroy(publicId);
       return res.status(200).json({
         success: true,
         message: 'Image deleted successfully',
