@@ -1,34 +1,21 @@
 import { useNavigate } from 'react-router-dom';
 import { format, isPast } from 'date-fns';
 import { formatCurrency } from '../../utils/formatters';
+import EventImage from './EventImage';
+import Button from './Button';
 
-const CATEGORY_COLORS = {
-  conference: 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200',
-  workshop: 'bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200',
-  seminar: 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200',
-  meetup: 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200',
-  concert: 'bg-pink-100 text-pink-800 dark:bg-pink-900 dark:text-pink-200',
-  sports: 'bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-200',
-  networking: 'bg-teal-100 text-teal-800 dark:bg-teal-900 dark:text-teal-200',
-  webinar: 'bg-indigo-100 text-indigo-800 dark:bg-indigo-900 dark:text-indigo-200',
+const CATEGORY_STYLES = {
+  conference: 'bg-blue-50 text-blue-700 dark:bg-blue-950/60 dark:text-blue-300 border-blue-200 dark:border-blue-900',
+  workshop: 'bg-primary-50 text-primary-700 dark:bg-primary-950/60 dark:text-primary-300 border-primary-200 dark:border-primary-900',
+  seminar: 'bg-emerald-50 text-emerald-700 dark:bg-emerald-950/60 dark:text-emerald-300 border-emerald-200 dark:border-emerald-900',
+  meetup: 'bg-amber-50 text-amber-700 dark:bg-amber-950/60 dark:text-amber-300 border-amber-200 dark:border-amber-900',
+  concert: 'bg-pink-50 text-pink-700 dark:bg-pink-950/60 dark:text-pink-300 border-pink-200 dark:border-pink-900',
+  sports: 'bg-orange-50 text-orange-700 dark:bg-orange-950/60 dark:text-orange-300 border-orange-200 dark:border-orange-900',
+  networking: 'bg-teal-50 text-teal-700 dark:bg-teal-950/60 dark:text-teal-300 border-teal-200 dark:border-teal-900',
+  webinar: 'bg-violet-50 text-violet-700 dark:bg-violet-950/60 dark:text-violet-300 border-violet-200 dark:border-violet-900',
 };
 
-const CATEGORY_GRADIENTS = [
-  'from-primary-500 to-primary-700',
-  'from-pink-500 to-rose-600',
-  'from-emerald-500 to-teal-600',
-  'from-amber-500 to-orange-600',
-  'from-cyan-500 to-blue-600',
-  'from-violet-500 to-purple-600',
-];
-
-const getCapacityColor = (percentage) => {
-  if (percentage >= 90) return 'bg-danger-500';
-  if (percentage >= 70) return 'bg-warning-500';
-  return 'bg-success-500';
-};
-
-const EventCard = ({ event }) => {
+const EventCard = ({ event, className = '' }) => {
   const navigate = useNavigate();
 
   if (!event) return null;
@@ -41,8 +28,8 @@ const EventCard = ({ event }) => {
     location,
     venue: topVenue,
     city: topCity,
-    price,
-    currency,
+    price = 0,
+    currency = 'USD',
     capacity = 0,
     registeredCount = 0,
     image,
@@ -54,116 +41,140 @@ const EventCard = ({ event }) => {
   const eventDate = date ? new Date(date) : null;
   const isEventPast = eventDate ? isPast(eventDate) : false;
   const isFull = capacity > 0 && registeredCount >= capacity;
-  const spotsLeft = capacity - registeredCount;
-  const capacityPercentage = capacity > 0 ? (registeredCount / capacity) * 100 : 0;
+  const spotsLeft = Math.max(0, capacity - registeredCount);
+  const percentBooked = capacity > 0 ? Math.round((registeredCount / capacity) * 100) : 0;
+  const isUrgent = !isEventPast && !isFull && spotsLeft > 0 && spotsLeft <= 15;
 
-  const gradientIndex = title ? title.charCodeAt(0) % CATEGORY_GRADIENTS.length : 0;
   const categoryKey = category?.toLowerCase();
-  const categoryColor = CATEGORY_COLORS[categoryKey] || 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-200';
+  const categoryBadgeClass = CATEGORY_STYLES[categoryKey] || 'bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300 border-slate-200 dark:border-slate-700';
 
-  const handleClick = () => {
+  const handleClick = (e) => {
+    // If target is inside button, let button handle navigation
     if (slug) navigate(`/events/${slug}`);
   };
 
   return (
-    <div
+    <article
       onClick={handleClick}
-      className="group cursor-pointer bg-white dark:bg-gray-800 rounded-xl shadow-sm hover:shadow-lg
-                 border border-gray-200 dark:border-gray-700 overflow-hidden
-                 transition-all duration-300 hover:-translate-y-1 flex flex-col"
+      className={`group cursor-pointer rounded-2xl bg-white dark:bg-slate-900 border border-slate-200/90 dark:border-slate-800 
+                  overflow-hidden shadow-sm hover:shadow-xl hover:border-primary-400 dark:hover:border-primary-600 
+                  transition-all duration-300 flex flex-col hover:-translate-y-1 ${className}`}
     >
-      {/* Image */}
-      <div className="relative h-48 overflow-hidden">
-        {image ? (
-          <img
-            src={image}
-            alt={title}
-            className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
-          />
-        ) : (
-          <div
-            className={`w-full h-full bg-linear-to-br ${CATEGORY_GRADIENTS[gradientIndex]}
-                        flex items-center justify-center transition-transform duration-300 group-hover:scale-105`}
-          >
-            <svg className="w-16 h-16 text-white/30" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5}
-                d="M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 012.25-2.25h13.5A2.25 2.25 0 0121 7.5v11.25m-18 0A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75m-18 0v-7.5A2.25 2.25 0 015.25 9h13.5A2.25 2.25 0 0121 11.25v7.5" />
-            </svg>
+      {/* 16:9 Standardized Visual Header */}
+      <div className="relative">
+        <EventImage
+          src={image}
+          alt={title}
+          category={category}
+          aspectRatio="aspect-video"
+        />
+
+        {/* Category Pill */}
+        <div className="absolute top-3 left-3 z-10">
+          <span className={`inline-flex items-center px-2.5 py-1 text-xs font-semibold uppercase tracking-wider rounded-lg border backdrop-blur-md shadow-xs ${categoryBadgeClass}`}>
+            {category || 'Campus'}
+          </span>
+        </div>
+
+        {/* Price Tag */}
+        <div className="absolute top-3 right-3 z-10">
+          <span className="inline-flex items-center px-2.5 py-1 text-xs font-bold rounded-lg bg-slate-900/85 text-white dark:bg-white/90 dark:text-slate-900 backdrop-blur-md shadow-sm">
+            {price === 0 ? 'FREE' : formatCurrency(price, currency)}
+          </span>
+        </div>
+
+        {/* Scarcity Urgency Badge (Coral) */}
+        {isUrgent && (
+          <div className="absolute bottom-3 left-3 z-10">
+            <span className="inline-flex items-center gap-1 px-2.5 py-1 text-xs font-bold rounded-lg bg-coral-500 text-white shadow-md animate-pulse-subtle">
+              <span>🔥</span>
+              <span>Only {spotsLeft} {spotsLeft === 1 ? 'seat' : 'seats'} left</span>
+            </span>
           </div>
         )}
 
-        {/* Category Badge */}
-        <span className={`absolute top-3 left-3 px-2.5 py-1 text-xs font-semibold rounded-full ${categoryColor}`}>
-          {category}
-        </span>
-
-        {/* Price Badge */}
-        <span className="absolute top-3 right-3 px-2.5 py-1 text-xs font-bold rounded-full bg-white/90 dark:bg-gray-900/90 text-gray-900 dark:text-white shadow-sm">
-          {formatCurrency(price || 0, currency || 'USD')}
-        </span>
-
-        {/* Sold Out Overlay */}
+        {/* Status Overlays for Full / Past */}
         {isFull && !isEventPast && (
-          <div className="absolute inset-0 bg-black/50 flex items-center justify-center">
-            <span className="px-4 py-2 bg-danger-500 text-white text-sm font-bold rounded-full uppercase tracking-wider">
+          <div className="absolute inset-0 bg-slate-950/65 backdrop-blur-[2px] flex items-center justify-center z-10">
+            <span className="px-3.5 py-1.5 bg-rose-600 text-white text-xs font-bold rounded-full uppercase tracking-widest shadow-md">
               Sold Out
             </span>
           </div>
         )}
 
-        {/* Past Event Overlay */}
         {isEventPast && (
-          <div className="absolute inset-0 bg-black/40 flex items-center justify-center">
-            <span className="px-4 py-2 bg-gray-700 text-white text-sm font-bold rounded-full uppercase tracking-wider">
+          <div className="absolute inset-0 bg-slate-950/60 backdrop-blur-[2px] flex items-center justify-center z-10">
+            <span className="px-3.5 py-1.5 bg-slate-700 text-white text-xs font-bold rounded-full uppercase tracking-widest shadow-sm">
               Past Event
             </span>
           </div>
         )}
       </div>
 
-      {/* Content */}
-      <div className={`p-4 flex flex-col flex-1 ${isEventPast ? 'opacity-60' : ''}`}>
-        <h3 className="text-lg font-semibold text-gray-900 dark:text-white line-clamp-2 mb-2 group-hover:text-primary-600 dark:group-hover:text-primary-400 transition-colors">
+      {/* Card Content Body */}
+      <div className="p-5 flex flex-col flex-1">
+        {/* Title */}
+        <h3 className="text-base font-bold text-slate-900 dark:text-white line-clamp-2 mb-2.5 group-hover:text-primary-600 dark:group-hover:text-primary-400 transition-colors">
           {title}
         </h3>
 
-        {/* Date */}
-        <div className="flex items-center gap-2 text-sm text-gray-500 dark:text-gray-400 mb-1.5">
-          <svg className="w-4 h-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
-              d="M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 012.25-2.25h13.5A2.25 2.25 0 0121 7.5v11.25m-18 0A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75m-18 0v-7.5A2.25 2.25 0 015.25 9h13.5A2.25 2.25 0 0121 11.25v7.5" />
+        {/* Date & Time */}
+        <div className="flex items-center gap-2 text-xs font-medium text-slate-600 dark:text-slate-400 mb-1.5">
+          <svg className="w-4 h-4 text-primary-500 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 012.25-2.25h13.5A2.25 2.25 0 0121 7.5v11.25m-18 0A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75m-18 0v-7.5A2.25 2.25 0 015.25 9h13.5A2.25 2.25 0 0121 11.25v7.5" />
           </svg>
-          <span>{eventDate ? format(eventDate, 'EEE, MMM dd, yyyy') : 'Date TBD'}</span>
+          <span>{eventDate ? format(eventDate, 'EEE, MMM d, yyyy') : 'Date TBA'}</span>
         </div>
 
-        {/* Location */}
-        <div className="flex items-center gap-2 text-sm text-gray-500 dark:text-gray-400 mb-4">
-          <svg className="w-4 h-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
-              d="M15 10.5a3 3 0 11-6 0 3 3 0 016 0z" />
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
-              d="M19.5 10.5c0 7.142-7.5 11.25-7.5 11.25S4.5 17.642 4.5 10.5a7.5 7.5 0 1115 0z" />
+        {/* Venue */}
+        <div className="flex items-center gap-2 text-xs text-slate-500 dark:text-slate-400 mb-4">
+          <svg className="w-4 h-4 text-slate-400 dark:text-slate-500 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 10.5a3 3 0 11-6 0 3 3 0 016 0z" />
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19.5 10.5c0 7.142-7.5 11.25-7.5 11.25S4.5 17.642 4.5 10.5a7.5 7.5 0 1115 0z" />
           </svg>
-          <span className="truncate">{[venue, city].filter(Boolean).join(', ')}</span>
+          <span className="truncate">{[venue, city].filter(Boolean).join(' • ') || 'Campus Venue'}</span>
         </div>
 
-        {/* Capacity Bar */}
-        <div className="mt-auto">
-          <div className="flex items-center justify-between text-xs text-gray-500 dark:text-gray-400 mb-1.5">
-            <span>{registeredCount} / {capacity} registered</span>
-            <span className={`font-medium ${isFull ? 'text-danger-500' : spotsLeft <= 10 ? 'text-warning-500' : 'text-success-500'}`}>
-              {isFull ? 'No spots left' : `${spotsLeft} spots left`}
+        {/* Capacity Bar & Conversion Action */}
+        <div className="mt-auto pt-3 border-t border-slate-100 dark:border-slate-800">
+          <div className="flex items-center justify-between text-xs text-slate-500 dark:text-slate-400 mb-1.5">
+            <span className="font-medium text-slate-700 dark:text-slate-300">
+              {percentBooked}% booked
+            </span>
+            <span className={isFull ? 'text-rose-500 font-semibold' : isUrgent ? 'text-coral-500 font-semibold' : 'text-slate-500'}>
+              {registeredCount} / {capacity}
             </span>
           </div>
-          <div className="w-full h-2 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
+
+          {/* Micro Progress Bar */}
+          <div className="w-full h-1.5 bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden mb-3.5">
             <div
-              className={`h-full rounded-full transition-all duration-500 ${getCapacityColor(capacityPercentage)}`}
-              style={{ width: `${Math.min(capacityPercentage, 100)}%` }}
+              className={`h-full rounded-full transition-all duration-500 ${
+                isFull
+                  ? 'bg-rose-500'
+                  : isUrgent
+                  ? 'bg-coral-500'
+                  : 'bg-primary-600'
+              }`}
+              style={{ width: `${Math.min(100, percentBooked)}%` }}
             />
           </div>
+
+          {/* Single High-Intent CTA */}
+          <Button
+            size="sm"
+            variant={isFull || isEventPast ? 'secondary' : isUrgent ? 'accent' : 'primary'}
+            className="w-full text-xs py-2"
+            onClick={(e) => {
+              e.stopPropagation();
+              navigate(`/events/${slug}`);
+            }}
+          >
+            {isEventPast ? 'View Summary' : isFull ? 'Event Full' : 'Register Now'}
+          </Button>
         </div>
       </div>
-    </div>
+    </article>
   );
 };
 

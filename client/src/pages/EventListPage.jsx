@@ -2,6 +2,8 @@ import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { getEvents, getCategories } from '../services/eventService';
 import EventCard from '../components/ui/EventCard';
+import SkeletonCard from '../components/ui/SkeletonCard';
+import Button from '../components/ui/Button';
 import useDebounce from '../hooks/useDebounce';
 import useDocumentTitle from '../hooks/useDocumentTitle';
 
@@ -493,41 +495,31 @@ const EventListPage = () => {
             {loading && (
               <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
                 {[...Array(6)].map((_, i) => (
-                  <div key={i} className="animate-pulse bg-white dark:bg-gray-800 rounded-xl overflow-hidden
-                                          border border-gray-200 dark:border-gray-700">
-                    <div className="h-48 bg-gray-200 dark:bg-gray-700" />
-                    <div className="p-4 space-y-3">
-                      <div className="h-5 bg-gray-200 dark:bg-gray-700 rounded w-3/4" />
-                      <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-1/2" />
-                      <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-2/3" />
-                      <div className="h-2 bg-gray-200 dark:bg-gray-700 rounded w-full mt-4" />
-                    </div>
-                  </div>
+                  <SkeletonCard key={i} />
                 ))}
               </div>
             )}
 
             {/* Empty State */}
             {!loading && events.length === 0 && (
-              <div className="flex flex-col items-center justify-center py-20 px-4
-                              bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700">
-                <svg className="w-24 h-24 text-gray-300 dark:text-gray-600 mb-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1}
-                    d="M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 012.25-2.25h13.5A2.25 2.25 0 0121 7.5v11.25m-18 0A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75m-18 0v-7.5A2.25 2.25 0 015.25 9h13.5A2.25 2.25 0 0121 11.25v7.5m-9-6h.008v.008H12v-.008zM12 15h.008v.008H12V15zm0 2.25h.008v.008H12v-.008zM9.75 15h.008v.008H9.75V15zm0 2.25h.008v.008H9.75v-.008zM7.5 15h.008v.008H7.5V15zm0 2.25h.008v.008H7.5v-.008zm6.75-4.5h.008v.008h-.008v-.008zm0 2.25h.008v.008h-.008V15zm0 2.25h.008v.008h-.008v-.008zm2.25-4.5h.008v.008H16.5v-.008zm0 2.25h.008v.008H16.5V15z" />
-                </svg>
-                <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-2">
+              <div className="flex flex-col items-center justify-center py-20 px-6
+                              bg-white dark:bg-slate-900 rounded-3xl border border-dashed border-slate-200 dark:border-slate-800 text-center">
+                <div className="w-16 h-16 rounded-2xl bg-primary-50 dark:bg-primary-950/50 text-primary-500 flex items-center justify-center text-3xl mb-4">
+                  🔍
+                </div>
+                <h3 className="text-xl font-bold text-slate-900 dark:text-white mb-2">
                   No events found
                 </h3>
-                <p className="text-gray-500 dark:text-gray-400 text-center max-w-md mb-6">
-                  We couldn&apos;t find any events matching your criteria. Try adjusting your filters or search terms.
+                <p className="text-slate-500 dark:text-slate-400 text-center max-w-md mb-6 text-sm">
+                  We couldn&apos;t find any events matching your selected criteria. Try adjusting your filters or search terms.
                 </p>
-                <button
+                <Button
                   onClick={clearFilters}
-                  className="px-6 py-2.5 bg-primary-600 text-white font-medium rounded-lg
-                             hover:bg-primary-700 transition-colors"
+                  variant="primary"
+                  size="md"
                 >
                   Clear Filters
-                </button>
+                </Button>
               </div>
             )}
 

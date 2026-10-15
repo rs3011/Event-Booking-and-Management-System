@@ -3,6 +3,7 @@ import { Link, NavLink, useLocation } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
 import { useTheme } from '../../contexts/ThemeContext';
 import EventViserLogo from '../common/EventViserLogo';
+import Button from '../ui/Button';
 
 const SunIcon = () => (
   <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-5 h-5">
@@ -40,32 +41,22 @@ const ChevronDownIcon = ({ className }) => (
   </svg>
 );
 
-const DropdownLink = ({ to, onClick, children }) => (
-  <Link
-    to={to}
-    onClick={onClick}
-    className="block px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
-  >
-    {children}
-  </Link>
-);
-
 const navLinkClasses = ({ isActive }) =>
-  `px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
+  `px-3 py-2 rounded-xl text-sm font-semibold transition-all duration-200 ${
     isActive
-      ? 'bg-primary-50 text-primary-700 dark:bg-primary-900/30 dark:text-primary-300'
-      : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100 dark:text-gray-300 dark:hover:text-white dark:hover:bg-gray-800'
+      ? 'bg-primary-50 text-primary-700 dark:bg-primary-950/60 dark:text-primary-300 shadow-xs'
+      : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100/80 dark:text-slate-300 dark:hover:text-white dark:hover:bg-slate-800/80'
   }`;
 
 const mobileNavLinkClasses = ({ isActive }) =>
-  `block px-3 py-2.5 rounded-lg text-sm font-medium transition-colors ${
+  `block px-4 py-3 rounded-xl text-sm font-semibold transition-colors ${
     isActive
-      ? 'bg-primary-50 text-primary-700 dark:bg-primary-900/30 dark:text-primary-300'
-      : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100 dark:text-gray-300 dark:hover:text-white dark:hover:bg-gray-800'
+      ? 'bg-primary-50 text-primary-700 dark:bg-primary-950/60 dark:text-primary-300'
+      : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100 dark:text-slate-300 dark:hover:text-white dark:hover:bg-slate-800'
   }`;
 
 const Navbar = () => {
-  const { user, isAuthenticated, isOrganizer, isAdmin, isAttendee, logout } = useAuth();
+  const { user, isAuthenticated, isOrganizer, isAdmin, logout } = useAuth();
   const { theme, toggleTheme } = useTheme();
   const location = useLocation();
 
@@ -83,34 +74,22 @@ const Navbar = () => {
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
-  // Close menus on route change
   useEffect(() => {
     setMobileOpen(false);
     setDropdownOpen(false);
   }, [location.pathname]);
 
-  // Prevent body scroll when mobile menu is open
   useEffect(() => {
     document.body.style.overflow = mobileOpen ? 'hidden' : '';
     return () => { document.body.style.overflow = ''; };
   }, [mobileOpen]);
-
-  const navLinks = [
-    { to: '/events', label: 'Events', visible: true },
-    { to: '/tickets', label: 'My Tickets', visible: isAuthenticated },
-    { to: '/organizer', label: 'Dashboard', visible: isOrganizer },
-    { to: '/admin', label: 'Admin', visible: isAdmin },
-    { to: '/organizer/events/create', label: 'Create Event', visible: isOrganizer },
-  ];
-
-  const visibleLinks = navLinks.filter((link) => link.visible);
 
   const themeIcons = { light: <SunIcon />, dark: <MoonIcon />, system: <MonitorIcon /> };
   const userInitial = user?.name?.charAt(0)?.toUpperCase() || '?';
 
   return (
     <>
-      <nav className="fixed top-0 left-0 right-0 z-50 bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-800 shadow-sm">
+      <nav className="fixed top-0 left-0 right-0 z-50 bg-white/90 dark:bg-slate-900/90 backdrop-blur-md border-b border-slate-200/80 dark:border-slate-800 transition-colors">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between h-16">
             {/* Logo */}
@@ -118,198 +97,243 @@ const Navbar = () => {
               <EventViserLogo size="md" />
             </Link>
 
-            {/* Desktop nav links */}
-            <div className="hidden md:flex items-center gap-1">
-              {visibleLinks.map((link) => (
-                <NavLink key={link.to} to={link.to} className={navLinkClasses}>
-                  {link.label}
+            {/* Desktop Navigation Links — Role-tailored */}
+            <div className="hidden md:flex items-center gap-1.5">
+              <NavLink to="/events" className={navLinkClasses}>
+                Explore Events
+              </NavLink>
+
+              {isAuthenticated && (
+                <NavLink to="/tickets" className={navLinkClasses}>
+                  My Tickets
                 </NavLink>
-              ))}
+              )}
+
+              {isOrganizer && (
+                <NavLink to="/organizer" className={navLinkClasses}>
+                  Organizer Hub
+                </NavLink>
+              )}
+
+              {isAdmin && (
+                <NavLink to="/admin" className={navLinkClasses}>
+                  Admin Panel
+                </NavLink>
+              )}
+
+              <Link
+                to="/about"
+                className="px-3 py-2 rounded-xl text-sm font-medium text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white transition-colors"
+              >
+                How It Works
+              </Link>
             </div>
 
             {/* Right section */}
-            <div className="flex items-center gap-2">
-              {/* Theme toggle */}
+            <div className="flex items-center gap-2.5">
+              {/* Organizer Quick Create Action */}
+              {isOrganizer && (
+                <Link to="/organizer/events/create" className="hidden sm:inline-flex">
+                  <Button size="sm" variant="accent" icon={
+                    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4.5v15m7.5-7.5h-15" />
+                    </svg>
+                  }>
+                    Create Event
+                  </Button>
+                </Link>
+              )}
+
+              {/* Theme Toggle */}
               <button
                 onClick={toggleTheme}
-                className="p-2 rounded-lg text-gray-500 hover:text-gray-700 hover:bg-gray-100 dark:text-gray-400 dark:hover:text-gray-200 dark:hover:bg-gray-800 transition-colors"
+                className="p-2 rounded-xl text-slate-500 hover:text-slate-800 hover:bg-slate-100 dark:text-slate-400 dark:hover:text-slate-200 dark:hover:bg-slate-800 transition-colors"
                 aria-label={`Current theme: ${theme}. Click to toggle.`}
                 title={`Theme: ${theme}`}
               >
                 {themeIcons[theme]}
               </button>
 
-              {/* Desktop: auth buttons or user dropdown */}
+              {/* Desktop Auth State */}
               <div className="hidden md:flex items-center gap-2">
                 {isAuthenticated ? (
                   <div className="relative" ref={dropdownRef}>
                     <button
                       onClick={() => setDropdownOpen((prev) => !prev)}
-                      className="flex items-center gap-2 p-1.5 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
+                      className="flex items-center gap-2.5 p-1.5 pr-2.5 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors border border-transparent hover:border-slate-200 dark:hover:border-slate-700"
                       aria-haspopup="true"
                       aria-expanded={dropdownOpen}
                     >
                       {user?.avatar ? (
-                        <img src={user.avatar} alt={user.name} className="w-8 h-8 rounded-full object-cover" />
+                        <img src={user.avatar} alt={user.name} className="w-8 h-8 rounded-full object-cover ring-2 ring-primary-500/30" />
                       ) : (
-                        <div className="w-8 h-8 rounded-full bg-primary-500 text-white flex items-center justify-center text-sm font-semibold">
+                        <div className="w-8 h-8 rounded-full bg-gradient-to-tr from-primary-600 to-indigo-700 text-white flex items-center justify-center text-xs font-bold shadow-xs">
                           {userInitial}
                         </div>
                       )}
-                      <span className="text-sm font-medium text-gray-700 dark:text-gray-200 max-w-[120px] truncate">
+                      <span className="text-sm font-semibold text-slate-700 dark:text-slate-200 max-w-[130px] truncate">
                         {user?.name}
                       </span>
-                      <ChevronDownIcon className={`w-4 h-4 text-gray-400 transition-transform duration-200 ${dropdownOpen ? 'rotate-180' : ''}`} />
+                      <ChevronDownIcon className={`w-3.5 h-3.5 text-slate-400 transition-transform duration-200 ${dropdownOpen ? 'rotate-180' : ''}`} />
                     </button>
 
                     {dropdownOpen && (
-                      <div className="absolute right-0 mt-2 w-56 bg-white dark:bg-gray-800 rounded-xl shadow-lg border border-gray-200 dark:border-gray-700 py-1 z-50 animate-in fade-in slide-in-from-top-1">
-                        <div className="px-4 py-3 border-b border-gray-100 dark:border-gray-700">
-                          <p className="text-sm font-medium text-gray-900 dark:text-white truncate">{user?.name}</p>
-                          <p className="text-xs text-gray-500 dark:text-gray-400 truncate">{user?.email}</p>
+                      <div className="absolute right-0 mt-2 w-60 bg-white dark:bg-slate-900 rounded-2xl shadow-xl border border-slate-200/80 dark:border-slate-800 py-2 z-50 animate-in fade-in slide-in-from-top-1">
+                        <div className="px-4 py-3 border-b border-slate-100 dark:border-slate-800">
+                          <p className="text-sm font-bold text-slate-900 dark:text-white truncate">{user?.name}</p>
+                          <p className="text-xs text-slate-500 dark:text-slate-400 truncate">{user?.email}</p>
+                          <span className="inline-block mt-1.5 px-2 py-0.5 text-[10px] uppercase font-bold tracking-wider rounded-md bg-primary-50 text-primary-700 dark:bg-primary-950 dark:text-primary-300 border border-primary-200 dark:border-primary-800">
+                            {user?.role || 'Attendee'}
+                          </span>
                         </div>
 
-                        <DropdownLink to="/tickets">My Tickets</DropdownLink>
-                        {isOrganizer && (
-                          <>
-                            <DropdownLink to="/organizer">Dashboard</DropdownLink>
-                            <DropdownLink to="/organizer/events/create">Create Event</DropdownLink>
-                          </>
-                        )}
-                        {isAdmin && <DropdownLink to="/admin">Admin Panel</DropdownLink>}
-                        <DropdownLink to="/settings">Settings</DropdownLink>
+                        <div className="py-1">
+                          <Link
+                            to="/tickets"
+                            className="block px-4 py-2 text-sm text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-800 font-medium"
+                          >
+                            My Tickets
+                          </Link>
 
-                        <div className="border-t border-gray-100 dark:border-gray-700 my-1" />
+                          {isOrganizer && (
+                            <>
+                              <Link
+                                to="/organizer"
+                                className="block px-4 py-2 text-sm text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-800 font-medium"
+                              >
+                                Organizer Dashboard
+                              </Link>
+                              <Link
+                                to="/organizer/events/create"
+                                className="block px-4 py-2 text-sm text-primary-600 dark:text-primary-400 hover:bg-slate-50 dark:hover:bg-slate-800 font-semibold"
+                              >
+                                + Host New Event
+                              </Link>
+                            </>
+                          )}
+
+                          {isAdmin && (
+                            <Link
+                              to="/admin"
+                              className="block px-4 py-2 text-sm text-purple-600 dark:text-purple-400 hover:bg-slate-50 dark:hover:bg-slate-800 font-semibold"
+                            >
+                              Admin Control Center
+                            </Link>
+                          )}
+
+                          <Link
+                            to="/settings"
+                            className="block px-4 py-2 text-sm text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-800 font-medium"
+                          >
+                            Account Settings
+                          </Link>
+                        </div>
+
+                        <div className="border-t border-slate-100 dark:border-slate-800 pt-1" />
 
                         <button
                           onClick={logout}
-                          className="w-full text-left px-4 py-2 text-sm text-danger-500 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+                          className="w-full text-left px-4 py-2.5 text-sm font-semibold text-rose-600 dark:text-rose-400 hover:bg-rose-50/50 dark:hover:bg-rose-950/30 transition-colors"
                         >
-                          Logout
+                          Sign Out
                         </button>
                       </div>
                     )}
                   </div>
                 ) : (
-                  <>
-                    <Link
-                      to="/auth/login"
-                      className="px-4 py-2 text-sm font-medium text-gray-700 hover:text-gray-900 dark:text-gray-300 dark:hover:text-white transition-colors"
-                    >
-                      Login
+                  <div className="flex items-center gap-2">
+                    <Link to="/auth/login">
+                      <Button variant="ghost" size="sm">
+                        Log In
+                      </Button>
                     </Link>
-                    <Link
-                      to="/auth/register"
-                      className="px-4 py-2 text-sm font-medium text-white bg-primary-600 hover:bg-primary-700 rounded-lg transition-colors"
-                    >
-                      Sign Up
+                    <Link to="/auth/register">
+                      <Button variant="primary" size="sm">
+                        Get Started
+                      </Button>
                     </Link>
-                  </>
+                  </div>
                 )}
               </div>
 
-              {/* Mobile menu toggle */}
+              {/* Mobile menu button */}
               <button
                 onClick={() => setMobileOpen((prev) => !prev)}
-                className="md:hidden p-2 rounded-lg text-gray-500 hover:text-gray-700 hover:bg-gray-100 dark:text-gray-400 dark:hover:text-gray-200 dark:hover:bg-gray-800 transition-colors"
-                aria-label="Toggle mobile menu"
+                className="md:hidden p-2 rounded-xl text-slate-600 hover:bg-slate-100 dark:text-slate-400 dark:hover:bg-slate-800 transition-colors"
+                aria-label="Toggle navigation menu"
               >
                 {mobileOpen ? <XIcon /> : <MenuIcon />}
               </button>
             </div>
           </div>
         </div>
-      </nav>
 
-      {/* Mobile drawer backdrop */}
-      <div
-        className={`fixed inset-0 z-40 bg-black/50 transition-opacity duration-300 md:hidden ${
-          mobileOpen ? 'opacity-100' : 'opacity-0 pointer-events-none'
-        }`}
-        onClick={() => setMobileOpen(false)}
-        aria-hidden="true"
-      />
+        {/* Mobile Dropdown Drawer */}
+        {mobileOpen && (
+          <div className="md:hidden border-t border-slate-200 dark:border-slate-800 bg-white/95 dark:bg-slate-900/95 backdrop-blur-md px-4 pt-3 pb-6 space-y-3">
+            <div className="space-y-1">
+              <NavLink to="/events" className={mobileNavLinkClasses}>
+                Explore Campus Events
+              </NavLink>
+              {isAuthenticated && (
+                <NavLink to="/tickets" className={mobileNavLinkClasses}>
+                  My Digital Tickets
+                </NavLink>
+              )}
+              {isOrganizer && (
+                <>
+                  <NavLink to="/organizer" className={mobileNavLinkClasses}>
+                    Organizer Dashboard
+                  </NavLink>
+                  <NavLink to="/organizer/events/create" className={mobileNavLinkClasses}>
+                    + Host an Event
+                  </NavLink>
+                </>
+              )}
+              {isAdmin && (
+                <NavLink to="/admin" className={mobileNavLinkClasses}>
+                  Admin Panel
+                </NavLink>
+              )}
+              <NavLink to="/about" className={mobileNavLinkClasses}>
+                How It Works
+              </NavLink>
+            </div>
 
-      {/* Mobile drawer panel */}
-      <aside
-        className={`fixed top-0 right-0 z-50 h-full w-72 bg-white dark:bg-gray-900 shadow-xl transform transition-transform duration-300 ease-in-out md:hidden flex flex-col ${
-          mobileOpen ? 'translate-x-0' : 'translate-x-full'
-        }`}
-        aria-label="Mobile navigation"
-      >
-        {/* Drawer header */}
-        <div className="flex items-center justify-between p-4 border-b border-gray-200 dark:border-gray-800">
-          <Link to="/" onClick={() => setMobileOpen(false)} aria-label="EventViser Home">
-            <EventViserLogo size="sm" />
-          </Link>
-          <button
-            onClick={() => setMobileOpen(false)}
-            className="p-2 rounded-lg text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
-            aria-label="Close menu"
-          >
-            <XIcon />
-          </button>
-        </div>
-
-        {/* User info (authenticated) */}
-        {isAuthenticated && (
-          <div className="p-4 border-b border-gray-200 dark:border-gray-800 flex items-center gap-3">
-            {user?.avatar ? (
-              <img src={user.avatar} alt={user.name} className="w-10 h-10 rounded-full object-cover" />
-            ) : (
-              <div className="w-10 h-10 rounded-full bg-primary-500 text-white flex items-center justify-center font-semibold">
-                {userInitial}
-              </div>
-            )}
-            <div className="min-w-0">
-              <p className="text-sm font-medium text-gray-900 dark:text-white truncate">{user?.name}</p>
-              <p className="text-xs text-gray-500 dark:text-gray-400 truncate">{user?.email}</p>
+            <div className="border-t border-slate-200 dark:border-slate-800 pt-3">
+              {isAuthenticated ? (
+                <div className="space-y-2">
+                  <div className="px-3 py-2 flex items-center gap-3">
+                    <div className="w-9 h-9 rounded-full bg-primary-600 text-white flex items-center justify-center font-bold text-sm">
+                      {userInitial}
+                    </div>
+                    <div className="truncate">
+                      <p className="text-sm font-bold text-slate-900 dark:text-white truncate">{user?.name}</p>
+                      <p className="text-xs text-slate-500 truncate">{user?.email}</p>
+                    </div>
+                  </div>
+                  <Button variant="danger" size="sm" className="w-full" onClick={logout}>
+                    Sign Out
+                  </Button>
+                </div>
+              ) : (
+                <div className="grid grid-cols-2 gap-2 pt-1">
+                  <Link to="/auth/login" className="w-full">
+                    <Button variant="secondary" size="md" className="w-full">
+                      Log In
+                    </Button>
+                  </Link>
+                  <Link to="/auth/register" className="w-full">
+                    <Button variant="primary" size="md" className="w-full">
+                      Get Started
+                    </Button>
+                  </Link>
+                </div>
+              )}
             </div>
           </div>
         )}
-
-        {/* Nav links */}
-        <nav className="flex-1 overflow-y-auto p-4 space-y-1">
-          {visibleLinks.map((link) => (
-            <NavLink key={link.to} to={link.to} className={mobileNavLinkClasses}>
-              {link.label}
-            </NavLink>
-          ))}
-
-          {isAuthenticated && (
-            <NavLink to="/settings" className={mobileNavLinkClasses}>
-              Settings
-            </NavLink>
-          )}
-        </nav>
-
-        {/* Drawer footer */}
-        <div className="p-4 border-t border-gray-200 dark:border-gray-800">
-          {isAuthenticated ? (
-            <button
-              onClick={logout}
-              className="w-full px-4 py-2.5 rounded-lg text-sm font-medium text-danger-500 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors text-left"
-            >
-              Logout
-            </button>
-          ) : (
-            <div className="space-y-2">
-              <Link
-                to="/auth/login"
-                className="block w-full text-center px-4 py-2.5 text-sm font-medium text-gray-700 border border-gray-300 rounded-lg hover:bg-gray-50 dark:text-gray-300 dark:border-gray-600 dark:hover:bg-gray-800 transition-colors"
-              >
-                Login
-              </Link>
-              <Link
-                to="/auth/register"
-                className="block w-full text-center px-4 py-2.5 text-sm font-medium text-white bg-primary-600 hover:bg-primary-700 rounded-lg transition-colors"
-              >
-                Sign Up
-              </Link>
-            </div>
-          )}
-        </div>
-      </aside>
+      </nav>
     </>
   );
 };
