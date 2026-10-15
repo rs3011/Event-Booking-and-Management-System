@@ -1,4 +1,5 @@
 const env = require('../config/env');
+const { captureException } = require('../utils/sentry');
 
 const isProduction = env.NODE_ENV === 'production';
 
@@ -13,6 +14,10 @@ const errorHandler = (err, req, res, next) => {
 
   let statusCode = err.statusCode || 500;
   let message = err.message || 'Internal server error';
+
+  if (statusCode === 500) {
+    captureException(err, { path: req?.path, method: req?.method, ip: req?.ip });
+  }
 
   // Mongoose invalid ObjectId
   if (err.name === 'CastError') {

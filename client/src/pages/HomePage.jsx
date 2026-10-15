@@ -1,449 +1,484 @@
 import { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import { getFeaturedEvents, getCategories } from '../services/eventService';
+import { getFeaturedEvents, getEvents } from '../services/eventService';
 import EventCard from '../components/ui/EventCard';
+import EventImage from '../components/ui/EventImage';
+import Button from '../components/ui/Button';
+import SkeletonCard from '../components/ui/SkeletonCard';
 import useDocumentTitle from '../hooks/useDocumentTitle';
+import { format } from 'date-fns';
 
-const CATEGORY_ICONS = {
-  conference: (
-    <svg className="w-8 h-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5}
-        d="M12 21v-8.25M15.75 21v-8.25M8.25 21v-8.25M3 9l9-6 9 6m-1.5 12V10.332A48.36 48.36 0 0012 9.75c-2.551 0-5.056.2-7.5.582V21" />
-    </svg>
-  ),
-  workshop: (
-    <svg className="w-8 h-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5}
-        d="M11.42 15.17l-5.384-3.112A.75.75 0 005.25 12.75v5.25a.75.75 0 00.786.716l5.384-.312a.75.75 0 00.594-.734v-2.5zM17.25 7.5l-5.384-3.112a.75.75 0 00-.732 0L5.75 7.5m11.5 0l-5.384 3.112a.75.75 0 01-.732 0L5.75 7.5m11.5 0v2.5" />
-    </svg>
-  ),
-  seminar: (
-    <svg className="w-8 h-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5}
-        d="M4.26 10.147a60.438 60.438 0 00-.491 6.347A48.627 48.627 0 0112 20.904a48.627 48.627 0 018.232-4.41 60.46 60.46 0 00-.491-6.347m-15.482 0a50.57 50.57 0 00-2.658-.813A59.905 59.905 0 0112 3.493a59.902 59.902 0 0110.399 5.84c-.896.248-1.783.52-2.658.814m-15.482 0A50.697 50.697 0 0112 13.489a50.702 50.702 0 017.74-3.342" />
-    </svg>
-  ),
-  meetup: (
-    <svg className="w-8 h-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5}
-        d="M18 18.72a9.094 9.094 0 003.741-.479 3 3 0 00-4.682-2.72m.94 3.198l.001.031c0 .225-.012.447-.037.666A11.944 11.944 0 0112 21c-2.17 0-4.207-.576-5.963-1.584A6.062 6.062 0 016 18.719m12 0a5.971 5.971 0 00-.941-3.197m0 0A5.995 5.995 0 0012 12.75a5.995 5.995 0 00-5.058 2.772m0 0a3 3 0 00-4.681 2.72 8.986 8.986 0 003.74.477m.94-3.197a5.971 5.971 0 00-.94 3.197M15 6.75a3 3 0 11-6 0 3 3 0 016 0zm6 3a2.25 2.25 0 11-4.5 0 2.25 2.25 0 014.5 0zm-13.5 0a2.25 2.25 0 11-4.5 0 2.25 2.25 0 014.5 0z" />
-    </svg>
-  ),
-  concert: (
-    <svg className="w-8 h-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5}
-        d="M9 9l10.5-3m0 6.553v3.75a2.25 2.25 0 01-1.632 2.163l-1.32.377a1.803 1.803 0 11-.99-3.467l2.31-.66a2.25 2.25 0 001.632-2.163zm0 0V2.25L9 5.25v10.303m0 0v3.75a2.25 2.25 0 01-1.632 2.163l-1.32.377a1.803 1.803 0 01-.99-3.467l2.31-.66A2.25 2.25 0 009 15.553z" />
-    </svg>
-  ),
-  sports: (
-    <svg className="w-8 h-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5}
-        d="M16.5 18.75h-9m9 0a3 3 0 013 3h-15a3 3 0 013-3m9 0v-3.375c0-.621-.503-1.125-1.125-1.125h-.871M7.5 18.75v-3.375c0-.621.504-1.125 1.125-1.125h.872m5.007 0H9.497m5.007 0a7.454 7.454 0 01-.982-3.172M9.497 14.25a7.454 7.454 0 00.981-3.172M5.25 4.236c-.982.143-1.954.317-2.916.52A6.003 6.003 0 007.73 9.728M5.25 4.236V4.5c0 2.108.966 3.99 2.48 5.228M5.25 4.236V2.721C7.456 2.41 9.71 2.25 12 2.25c2.291 0 4.545.16 6.75.47v1.516M18.75 4.236c.982.143 1.954.317 2.916.52A6.003 6.003 0 0016.27 9.728M18.75 4.236V4.5c0 2.108-.966 3.99-2.48 5.228m0 0a48.454 48.454 0 01-7.54 0" />
-    </svg>
-  ),
-  networking: (
-    <svg className="w-8 h-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5}
-        d="M7.5 21L3 16.5m0 0L7.5 12M3 16.5h13.5m0-13.5L21 7.5m0 0L16.5 12M21 7.5H7.5" />
-    </svg>
-  ),
-  webinar: (
-    <svg className="w-8 h-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5}
-        d="M9 17.25v1.007a3 3 0 01-.879 2.122L7.5 21h9l-.621-.621A3 3 0 0115 18.257V17.25m6-12V15a2.25 2.25 0 01-2.25 2.25H5.25A2.25 2.25 0 013 15V5.25m18 0A2.25 2.25 0 0018.75 3H5.25A2.25 2.25 0 003 5.25m18 0V12a2.25 2.25 0 01-2.25 2.25H5.25A2.25 2.25 0 013 12V5.25" />
-    </svg>
-  ),
-};
-
-const CATEGORY_COLORS = {
-  conference: 'bg-blue-50 text-blue-600 dark:bg-blue-900/30 dark:text-blue-400 hover:bg-blue-100 dark:hover:bg-blue-900/50',
-  workshop: 'bg-purple-50 text-purple-600 dark:bg-purple-900/30 dark:text-purple-400 hover:bg-purple-100 dark:hover:bg-purple-900/50',
-  seminar: 'bg-green-50 text-green-600 dark:bg-green-900/30 dark:text-green-400 hover:bg-green-100 dark:hover:bg-green-900/50',
-  meetup: 'bg-yellow-50 text-yellow-600 dark:bg-yellow-900/30 dark:text-yellow-400 hover:bg-yellow-100 dark:hover:bg-yellow-900/50',
-  concert: 'bg-pink-50 text-pink-600 dark:bg-pink-900/30 dark:text-pink-400 hover:bg-pink-100 dark:hover:bg-pink-900/50',
-  sports: 'bg-orange-50 text-orange-600 dark:bg-orange-900/30 dark:text-orange-400 hover:bg-orange-100 dark:hover:bg-orange-900/50',
-  networking: 'bg-teal-50 text-teal-600 dark:bg-teal-900/30 dark:text-teal-400 hover:bg-teal-100 dark:hover:bg-teal-900/50',
-  webinar: 'bg-indigo-50 text-indigo-600 dark:bg-indigo-900/30 dark:text-indigo-400 hover:bg-indigo-100 dark:hover:bg-indigo-900/50',
-};
-
-const HOW_IT_WORKS_STEPS = [
-  {
-    step: 1,
-    title: 'Find Events',
-    description: 'Browse through hundreds of events or search for something specific that interests you.',
-    icon: (
-      <svg className="w-10 h-10" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5}
-          d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z" />
-      </svg>
-    ),
-  },
-  {
-    step: 2,
-    title: 'Register',
-    description: 'Sign up for events instantly with just a few clicks. Quick, easy, and secure.',
-    icon: (
-      <svg className="w-10 h-10" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5}
-          d="M16.5 6v.75m0 3v.75m0 3v.75m0 3V18m-9-5.25h5.25M7.5 15h3M3.375 5.25c-.621 0-1.125.504-1.125 1.125v3.026a2.999 2.999 0 010 5.198v3.026c0 .621.504 1.125 1.125 1.125h17.25c.621 0 1.125-.504 1.125-1.125v-3.026a2.999 2.999 0 010-5.198V6.375c0-.621-.504-1.125-1.125-1.125H3.375z" />
-      </svg>
-    ),
-  },
-  {
-    step: 3,
-    title: 'Get Your Ticket',
-    description: 'Receive your digital ticket with QR code. Show it at the event entrance.',
-    icon: (
-      <svg className="w-10 h-10" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5}
-          d="M9 12.75L11.25 15 15 9.75M21 12c0 1.268-.63 2.39-1.593 3.068a3.745 3.745 0 01-1.043 3.296 3.745 3.745 0 01-3.296 1.043A3.745 3.745 0 0112 21c-1.268 0-2.39-.63-3.068-1.593a3.746 3.746 0 01-3.296-1.043 3.745 3.745 0 01-1.043-3.296A3.745 3.745 0 013 12c0-1.268.63-2.39 1.593-3.068a3.745 3.745 0 011.043-3.296 3.746 3.746 0 013.296-1.043A3.746 3.746 0 0112 3c1.268 0 2.39.63 3.068 1.593a3.746 3.746 0 013.296 1.043 3.746 3.746 0 011.043 3.296A3.745 3.745 0 0121 12z" />
-      </svg>
-    ),
-  },
-];
-
-const DEFAULT_CATEGORIES = [
-  { name: 'Conference', slug: 'conference', eventCount: 0 },
-  { name: 'Workshop', slug: 'workshop', eventCount: 0 },
-  { name: 'Seminar', slug: 'seminar', eventCount: 0 },
-  { name: 'Meetup', slug: 'meetup', eventCount: 0 },
-  { name: 'Concert', slug: 'concert', eventCount: 0 },
-  { name: 'Sports', slug: 'sports', eventCount: 0 },
-  { name: 'Networking', slug: 'networking', eventCount: 0 },
-  { name: 'Webinar', slug: 'webinar', eventCount: 0 },
+const CATEGORIES = [
+  { id: 'all', label: 'All Events', icon: '✨' },
+  { id: 'workshop', label: 'Workshops', icon: '💻' },
+  { id: 'seminar', label: 'Seminars & AI', icon: '🧠' },
+  { id: 'conference', label: 'Conferences', icon: '🏛️' },
+  { id: 'concert', label: 'Concerts & Fests', icon: '🎵' },
+  { id: 'sports', label: 'Sports', icon: '⚽' },
+  { id: 'networking', label: 'Networking', icon: '🤝' },
 ];
 
 const HomePage = () => {
-  useDocumentTitle('Home');
-
+  useDocumentTitle('EventViser — Campus Events, Simplified');
   const navigate = useNavigate();
-  const [searchTerm, setSearchTerm] = useState('');
-  const [searchCategory, setSearchCategory] = useState('');
+
   const [featuredEvents, setFeaturedEvents] = useState([]);
-  const [categories, setCategories] = useState(DEFAULT_CATEGORIES);
+  const [upcomingEvents, setUpcomingEvents] = useState([]);
+  const [selectedCategory, setSelectedCategory] = useState('all');
+  const [searchQuery, setSearchQuery] = useState('');
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const fetchData = async () => {
+    const loadHomeData = async () => {
       try {
-        const [eventsRes, categoriesRes] = await Promise.allSettled([
+        setLoading(true);
+        const [featuredRes, upcomingRes] = await Promise.allSettled([
           getFeaturedEvents(),
-          getCategories(),
+          getEvents({ status: 'published', limit: 8, sort: 'date' }),
         ]);
 
-        if (eventsRes.status === 'fulfilled') {
-          const eventsData = eventsRes.value.data?.events || eventsRes.value.data || eventsRes.value || [];
-          setFeaturedEvents(Array.isArray(eventsData) ? eventsData : []);
+        if (featuredRes.status === 'fulfilled') {
+          const fData = featuredRes.value?.data || featuredRes.value?.events || featuredRes.value || [];
+          setFeaturedEvents(Array.isArray(fData) ? fData : []);
         }
 
-        if (categoriesRes.status === 'fulfilled') {
-          const rawCat = categoriesRes.value.data?.categories || categoriesRes.value.data || categoriesRes.value || [];
-          const catData = Array.isArray(rawCat) ? rawCat : [];
-          if (catData.length > 0) {
-            const normalized = catData.map((c) => ({
-              name: c.name || (c.category ? c.category.charAt(0).toUpperCase() + c.category.slice(1) : ''),
-              slug: c.slug || c.category || '',
-              eventCount: c.eventCount ?? c.count ?? 0,
-            }));
-            setCategories(normalized);
-          }
+        if (upcomingRes.status === 'fulfilled') {
+          const uData = upcomingRes.value?.data?.events || upcomingRes.value?.events || upcomingRes.value?.data || [];
+          setUpcomingEvents(Array.isArray(uData) ? uData : []);
         }
-      } catch {
-        // Silently fail — homepage should still render with defaults
+      } catch (err) {
+        console.error('Failed to load homepage data:', err);
       } finally {
         setLoading(false);
       }
     };
 
-    fetchData();
+    loadHomeData();
   }, []);
 
-  const handleSearch = (e) => {
-    e.preventDefault();
-    const params = new URLSearchParams();
-    if (searchTerm.trim()) params.set('search', searchTerm.trim());
-    if (searchCategory) params.set('category', searchCategory);
-    navigate(`/events?${params.toString()}`);
-  };
+  const spotlightEvent = featuredEvents[0] || upcomingEvents[0];
+  const totalRegistrations = upcomingEvents.reduce((acc, ev) => acc + (ev.registeredCount || 0), 0);
+  const totalCapacity = upcomingEvents.reduce((acc, ev) => acc + (ev.capacity || 0), 0);
+  const aggregateFillRate = totalCapacity > 0 ? Math.round((totalRegistrations / totalCapacity) * 100) : 0;
+
+  const filteredEvents = upcomingEvents.filter((event) => {
+    const matchesCategory =
+      selectedCategory === 'all' ||
+      event.category?.toLowerCase() === selectedCategory.toLowerCase();
+    const matchesSearch =
+      !searchQuery.trim() ||
+      event.title?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      event.description?.toLowerCase().includes(searchQuery.toLowerCase());
+    return matchesCategory && matchesSearch;
+  });
 
   return (
-    <div className="min-h-screen">
-      {/* ═══════════════ HERO SECTION ═══════════════ */}
-      <section className="relative bg-linear-to-br from-primary-600 via-primary-700 to-primary-800 overflow-hidden">
-        {/* Background Pattern */}
-        <div className="absolute inset-0 opacity-10">
-          <div className="absolute inset-0" style={{
-            backgroundImage: `url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23ffffff' fill-opacity='1'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E")`,
-          }} />
-        </div>
+    <div className="space-y-16 sm:space-y-24 pb-16 overflow-hidden">
+      {/* ─────────────────────────────────────────────────────────────
+          1. HERO SECTION: Benefit-Driven with Product Visual
+      ─────────────────────────────────────────────────────────────── */}
+      <section className="relative pt-6 sm:pt-12">
+        {/* Subtle Ambient Background Gradients */}
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[300px] bg-gradient-to-tr from-primary-600/15 to-coral-500/10 blur-[100px] -z-10 rounded-full pointer-events-none" />
 
-        <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20 sm:py-28 lg:py-32">
-          <div className="text-center max-w-3xl mx-auto">
-            <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-white/15 backdrop-blur-md border border-white/20 text-white text-xs font-semibold uppercase tracking-wider mb-6 shadow-sm">
-              <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
-              EventViser Platform
-            </div>
-
-            <h1 className="text-4xl sm:text-5xl lg:text-6xl font-extrabold text-white tracking-tight">
-              Campus Event Operations <br />
-              <span className="text-primary-200">Reimagined with EventViser</span>
-            </h1>
-            <p className="mt-6 text-lg sm:text-xl text-primary-100 max-w-2xl mx-auto">
-              Discover, register, and organize impactful university events with real-time analytics, QR tickets, and automated capacity controls.
-            </p>
-
-            {/* Search Bar */}
-            <form onSubmit={handleSearch} className="mt-10 max-w-2xl mx-auto">
-              <div className="flex flex-col sm:flex-row gap-3 bg-white/10 backdrop-blur-sm p-3 rounded-2xl">
-                <div className="relative flex-1">
-                  <svg className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-                  </svg>
-                  <input
-                    type="text"
-                    value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
-                    placeholder="Search events..."
-                    className="w-full pl-10 pr-4 py-3 rounded-xl bg-white dark:bg-gray-800 text-gray-900 dark:text-white
-                               placeholder-gray-400 border-0 focus:ring-2 focus:ring-primary-400 outline-none"
-                  />
-                </div>
-                <select
-                  value={searchCategory}
-                  onChange={(e) => setSearchCategory(e.target.value)}
-                  className="px-4 py-3 rounded-xl bg-white dark:bg-gray-800 text-gray-900 dark:text-white
-                             border-0 focus:ring-2 focus:ring-primary-400 outline-none cursor-pointer"
-                >
-                  <option value="">All Categories</option>
-                  {DEFAULT_CATEGORIES.map((cat) => (
-                    <option key={cat.slug} value={cat.slug}>{cat.name}</option>
-                  ))}
-                </select>
-                <button
-                  type="submit"
-                  className="px-8 py-3 bg-white text-primary-700 font-semibold rounded-xl
-                             hover:bg-primary-50 transition-colors duration-200 shrink-0"
-                >
-                  Search
-                </button>
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 lg:gap-8 items-center">
+            
+            {/* Left Column: Direct Value Proposition */}
+            <div className="lg:col-span-7 space-y-6 text-center lg:text-left">
+              <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-primary-50 dark:bg-primary-950/60 border border-primary-200 dark:border-primary-800 shadow-xs">
+                <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+                <span className="text-xs font-bold uppercase tracking-wider text-primary-700 dark:text-primary-300">
+                  Campus Events, Simplified
+                </span>
               </div>
-            </form>
 
-            {/* Trust Badges */}
-            <div className="mt-12 flex flex-wrap items-center justify-center gap-6 sm:gap-10">
-              {[
-                { icon: 'M9 12.75L11.25 15 15 9.75M21 12c0 1.268-.63 2.39-1.593 3.068a3.745 3.745 0 01-1.043 3.296 3.745 3.745 0 01-3.296 1.043A3.745 3.745 0 0112 21c-1.268 0-2.39-.63-3.068-1.593a3.746 3.746 0 01-3.296-1.043 3.745 3.745 0 01-1.043-3.296A3.745 3.745 0 013 12c0-1.268.63-2.39 1.593-3.068a3.745 3.745 0 011.043-3.296 3.746 3.746 0 013.296-1.043A3.746 3.746 0 0112 3c1.268 0 2.39.63 3.068 1.593a3.746 3.746 0 013.296 1.043 3.746 3.746 0 011.043 3.296A3.745 3.745 0 0121 12z', label: 'Verified Events' },
-                { icon: 'M16.5 10.5V6.75a4.5 4.5 0 10-9 0v3.75m-.75 11.25h10.5a2.25 2.25 0 002.25-2.25v-6.75a2.25 2.25 0 00-2.25-2.25H6.75a2.25 2.25 0 00-2.25 2.25v6.75a2.25 2.25 0 002.25 2.25z', label: 'Secure Booking' },
-                { icon: 'M3.75 13.5l10.5-11.25L12 10.5h8.25L9.75 21.75 12 13.5H3.75z', label: 'Instant Tickets' },
-              ].map((badge) => (
-                <div key={badge.label} className="flex items-center gap-2 text-primary-100">
-                  <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" d={badge.icon} />
-                  </svg>
-                  <span className="text-sm font-medium">{badge.label}</span>
+              <h1 className="text-4xl sm:text-5xl lg:text-6xl font-black text-slate-900 dark:text-white tracking-tight leading-[1.1]">
+                Discover. Register.{' '}
+                <span className="bg-gradient-to-r from-primary-600 via-indigo-600 to-purple-600 dark:from-primary-400 dark:via-indigo-400 dark:to-purple-300 bg-clip-text text-transparent">
+                  Show up.
+                </span>
+              </h1>
+
+              <p className="text-lg sm:text-xl text-slate-600 dark:text-slate-300 max-w-2xl mx-auto lg:mx-0 font-normal leading-relaxed">
+                Find the campus events worth attending and manage your entire registration journey from one platform — with instant digital QR tickets and zero event-day chaos.
+              </p>
+
+              {/* Dual Action CTAs */}
+              <div className="flex flex-col sm:flex-row items-center justify-center lg:justify-start gap-3.5 pt-2">
+                <Link to="/events" className="w-full sm:w-auto">
+                  <Button size="lg" variant="primary" className="w-full sm:w-auto text-base px-8 shadow-lg shadow-primary-500/20" icon={
+                    <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z" />
+                    </svg>
+                  }>
+                    Explore Events
+                  </Button>
+                </Link>
+
+                <Link to="/organizer/events/create" className="w-full sm:w-auto">
+                  <Button size="lg" variant="secondary" className="w-full sm:w-auto text-base px-7">
+                    Organize an Event
+                  </Button>
+                </Link>
+              </div>
+
+              {/* Proof-Point Micro Badges */}
+              <div className="pt-6 border-t border-slate-200/80 dark:border-slate-800 grid grid-cols-3 gap-3 text-left">
+                <div className="space-y-0.5">
+                  <div className="text-xl sm:text-2xl font-black text-slate-900 dark:text-white">Instant</div>
+                  <div className="text-xs font-medium text-slate-500 dark:text-slate-400">Digital QR Tickets</div>
                 </div>
-              ))}
+                <div className="space-y-0.5">
+                  <div className="text-xl sm:text-2xl font-black text-slate-900 dark:text-white">Atomic</div>
+                  <div className="text-xs font-medium text-slate-500 dark:text-slate-400">Zero Overbooking</div>
+                </div>
+                <div className="space-y-0.5">
+                  <div className="text-xl sm:text-2xl font-black text-slate-900 dark:text-white">1-Tap</div>
+                  <div className="text-xs font-medium text-slate-500 dark:text-slate-400">Check-In Scanner</div>
+                </div>
+              </div>
             </div>
-          </div>
-        </div>
 
-        {/* Wave Divider */}
-        <div className="absolute bottom-0 left-0 right-0">
-          <svg viewBox="0 0 1440 80" fill="none" xmlns="http://www.w3.org/2000/svg" className="w-full">
-            <path d="M0 80V40C240 0 480 0 720 40C960 80 1200 80 1440 40V80H0Z"
-              className="fill-gray-50 dark:fill-gray-900" />
-          </svg>
+            {/* Right Column: High-Fidelity Product Visual (Bound to live API data) */}
+            <div className="lg:col-span-5 relative">
+              <div className="relative mx-auto max-w-md rounded-3xl bg-slate-900 p-3 sm:p-4 shadow-2xl border border-slate-800 text-white select-none">
+                {/* Window header */}
+                <div className="flex items-center justify-between pb-3 border-b border-slate-800 px-2">
+                  <div className="flex items-center gap-1.5">
+                    <span className="w-3 h-3 rounded-full bg-rose-500/80" />
+                    <span className="w-3 h-3 rounded-full bg-amber-500/80" />
+                    <span className="w-3 h-3 rounded-full bg-emerald-500/80" />
+                  </div>
+                  <span className="text-xs font-semibold text-slate-400">Campus Operations Feed</span>
+                  <span className="text-[10px] uppercase font-bold text-emerald-400 bg-emerald-950/60 border border-emerald-800/60 px-2 py-0.5 rounded-md">
+                    {loading ? 'Syncing...' : 'Live'}
+                  </span>
+                </div>
+
+                {/* Dashboard preview content */}
+                <div className="space-y-4 pt-4">
+                  {/* Metric row */}
+                  <div className="grid grid-cols-2 gap-3">
+                    <div className="p-3.5 rounded-2xl bg-slate-800/90 border border-slate-700/60">
+                      <span className="text-xs font-medium text-slate-400">Active Bookings</span>
+                      <div className="text-2xl font-black text-white mt-0.5">
+                        {loading ? '...' : totalRegistrations}
+                      </div>
+                      <span className="text-[11px] text-emerald-400 font-semibold flex items-center gap-1 mt-1">
+                        ↑ {aggregateFillRate}% Capacity
+                      </span>
+                    </div>
+
+                    <div className="p-3.5 rounded-2xl bg-slate-800/90 border border-slate-700/60">
+                      <span className="text-xs font-medium text-slate-400">Active Events</span>
+                      <div className="text-2xl font-black text-white mt-0.5">
+                        {loading ? '...' : upcomingEvents.length}
+                      </div>
+                      <span className="text-[11px] text-primary-400 font-semibold mt-1 block">
+                        Open Registrations
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* Active Event Card Preview */}
+                  {spotlightEvent ? (
+                    <Link
+                      to={`/events/${spotlightEvent.slug}`}
+                      className="block p-4 rounded-2xl bg-gradient-to-r from-primary-950/70 via-slate-800 to-slate-800 border border-primary-800/40 space-y-3 hover:border-primary-500/60 transition-colors"
+                    >
+                      <div className="flex items-center justify-between">
+                        <span className="text-xs font-bold text-coral-400 flex items-center gap-1">
+                          {spotlightEvent.capacity > 0 && Math.max(0, spotlightEvent.capacity - (spotlightEvent.registeredCount || 0)) <= 15
+                            ? `🔥 ${Math.max(0, spotlightEvent.capacity - (spotlightEvent.registeredCount || 0))} Spots Left`
+                            : 'Open for Registration'}
+                        </span>
+                        <span className="text-[10px] uppercase tracking-wider font-bold bg-primary-600/30 text-primary-300 px-2 py-0.5 rounded-md">
+                          {spotlightEvent.category || 'Event'}
+                        </span>
+                      </div>
+                      <div>
+                        <h4 className="text-sm font-bold text-white line-clamp-1">{spotlightEvent.title}</h4>
+                        <p className="text-xs text-slate-400 mt-0.5">
+                          {spotlightEvent.location?.venue || spotlightEvent.venue || 'Campus Venue'} • {spotlightEvent.date ? format(new Date(spotlightEvent.date), 'MMM dd, h:mm a') : 'Upcoming'}
+                        </p>
+                      </div>
+                      <div className="space-y-1">
+                        <div className="flex justify-between text-[11px] text-slate-400">
+                          <span>{spotlightEvent.registeredCount || 0} registered</span>
+                          <span>{spotlightEvent.capacity || 0} max capacity</span>
+                        </div>
+                        <div className="w-full h-1.5 bg-slate-700 rounded-full overflow-hidden">
+                          <div
+                            className="h-full bg-gradient-to-r from-primary-500 to-coral-500 rounded-full"
+                            style={{
+                              width: `${spotlightEvent.capacity > 0 ? Math.min(100, Math.round(((spotlightEvent.registeredCount || 0) / spotlightEvent.capacity) * 100)) : 0}%`,
+                            }}
+                          />
+                        </div>
+                      </div>
+                    </Link>
+                  ) : (
+                    <div className="p-4 rounded-2xl bg-slate-800/60 border border-slate-700/40 text-center py-6 text-slate-400 text-xs">
+                      No active events scheduled yet.
+                    </div>
+                  )}
+
+                  {/* Ticket confirmation sample */}
+                  <div className="flex items-center gap-3 p-3 rounded-2xl bg-emerald-950/40 border border-emerald-800/50 text-xs">
+                    <div className="w-8 h-8 rounded-xl bg-emerald-500/20 text-emerald-400 flex items-center justify-center font-bold text-sm shrink-0">
+                      ✓
+                    </div>
+                    <div className="truncate">
+                      <span className="font-bold text-white block">Digital Pass Issued</span>
+                      <span className="text-emerald-300 text-[11px]">Instant QR Code with Confirmation</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+          </div>
         </div>
       </section>
 
-      {/* ═══════════════ FEATURED EVENTS ═══════════════ */}
-      <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16 sm:py-20">
-        <div className="flex items-center justify-between mb-10">
-          <div>
-            <h2 className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-white">
-              Featured Events
-            </h2>
-            <p className="mt-2 text-gray-500 dark:text-gray-400">
-              Don&apos;t miss out on these popular upcoming events
-            </p>
-          </div>
-          <Link
-            to="/events"
-            className="hidden sm:inline-flex items-center gap-2 px-5 py-2.5 text-sm font-medium
-                       text-primary-600 dark:text-primary-400 bg-primary-50 dark:bg-primary-900/30
-                       rounded-lg hover:bg-primary-100 dark:hover:bg-primary-900/50 transition-colors"
-          >
-            View All Events
-            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.5 4.5L21 12m0 0l-7.5 7.5M21 12H3" />
-            </svg>
-          </Link>
-        </div>
+      {/* ─────────────────────────────────────────────────────────────
+          2. SPOTLIGHT / FEATURED HERO EVENT (Conversion Focus)
+      ─────────────────────────────────────────────────────────────── */}
+      {spotlightEvent && (
+        <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="relative rounded-3xl bg-gradient-to-br from-slate-900 via-primary-950 to-slate-900 border border-slate-800 shadow-xl overflow-hidden p-6 sm:p-10 text-white">
+            <div className="absolute top-0 right-0 w-96 h-96 bg-primary-600/10 rounded-full blur-3xl pointer-events-none" />
 
-        {loading ? (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {[...Array(3)].map((_, i) => (
-              <div key={i} className="animate-pulse bg-white dark:bg-gray-800 rounded-xl overflow-hidden border border-gray-200 dark:border-gray-700">
-                <div className="h-48 bg-gray-200 dark:bg-gray-700" />
-                <div className="p-4 space-y-3">
-                  <div className="h-5 bg-gray-200 dark:bg-gray-700 rounded w-3/4" />
-                  <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-1/2" />
-                  <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-2/3" />
-                  <div className="h-2 bg-gray-200 dark:bg-gray-700 rounded w-full mt-4" />
+            <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-center relative z-10">
+              <div className="lg:col-span-5 rounded-2xl overflow-hidden shadow-lg border border-white/10">
+                <EventImage
+                  src={spotlightEvent.image}
+                  alt={spotlightEvent.title}
+                  category={spotlightEvent.category}
+                  aspectRatio="aspect-video"
+                  priority={true}
+                />
+              </div>
+
+              <div className="lg:col-span-7 space-y-4">
+                <div className="flex flex-wrap items-center gap-2.5">
+                  <span className="px-3 py-1 rounded-lg text-xs font-bold uppercase tracking-wider bg-primary-500/20 text-primary-300 border border-primary-500/30">
+                    Featured Event
+                  </span>
+                  <span className="px-3 py-1 rounded-lg text-xs font-bold uppercase tracking-wider bg-coral-500/20 text-coral-300 border border-coral-500/30">
+                    {spotlightEvent.category || 'Special'}
+                  </span>
+                  {spotlightEvent.capacity > 0 && (
+                    <span className="text-xs text-slate-300">
+                      {spotlightEvent.registeredCount || 0} / {spotlightEvent.capacity} spots filled
+                    </span>
+                  )}
+                </div>
+
+                <h2 className="text-2xl sm:text-3xl lg:text-4xl font-extrabold text-white tracking-tight">
+                  {spotlightEvent.title}
+                </h2>
+
+                <p className="text-sm sm:text-base text-slate-300 line-clamp-3 leading-relaxed">
+                  {spotlightEvent.description}
+                </p>
+
+                <div className="flex flex-wrap items-center gap-6 pt-2 text-sm text-slate-300">
+                  <div className="flex items-center gap-2">
+                    <svg className="w-5 h-5 text-primary-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 012.25-2.25h13.5A2.25 2.25 0 0121 7.5v11.25m-18 0A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75m-18 0v-7.5A2.25 2.25 0 015.25 9h13.5A2.25 2.25 0 0121 11.25v7.5" />
+                    </svg>
+                    <span>{spotlightEvent.date ? format(new Date(spotlightEvent.date), 'EEEE, MMMM d, yyyy') : 'Date TBA'}</span>
+                  </div>
+
+                  <div className="flex items-center gap-2">
+                    <svg className="w-5 h-5 text-primary-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 10.5a3 3 0 11-6 0 3 3 0 016 0z" />
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19.5 10.5c0 7.142-7.5 11.25-7.5 11.25S4.5 17.642 4.5 10.5a7.5 7.5 0 1115 0z" />
+                    </svg>
+                    <span>{spotlightEvent.location?.venue || spotlightEvent.venue || 'Campus Auditorium'}</span>
+                  </div>
+                </div>
+
+                <div className="pt-4 flex items-center gap-4">
+                  <Button
+                    size="lg"
+                    variant="accent"
+                    onClick={() => navigate(`/events/${spotlightEvent.slug}`)}
+                  >
+                    View & Register Now
+                  </Button>
                 </div>
               </div>
+            </div>
+          </div>
+        </section>
+      )}
+
+      {/* ─────────────────────────────────────────────────────────────
+          3. MARKETPLACE DISCOVERY: Filters & Events Grid
+      ─────────────────────────────────────────────────────────────── */}
+      <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-8">
+        <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
+          <div>
+            <span className="text-xs font-bold uppercase tracking-wider text-primary-600 dark:text-primary-400">
+              Campus Marketplace
+            </span>
+            <h2 className="text-2xl sm:text-3xl font-extrabold text-slate-900 dark:text-white tracking-tight mt-1">
+              Explore Upcoming Events
+            </h2>
+            <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">
+              Find something worth showing up for. Book your spot with a single click.
+            </p>
+          </div>
+
+          {/* Quick Search */}
+          <div className="w-full md:w-72">
+            <div className="relative">
+              <input
+                type="text"
+                placeholder="Search events..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 text-sm text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-primary-500"
+              />
+              <svg className="w-4 h-4 text-slate-400 absolute left-3.5 top-3.5 pointer-events-none" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z" />
+              </svg>
+            </div>
+          </div>
+        </div>
+
+        {/* Category Pills Bar */}
+        <div className="flex items-center gap-2 overflow-x-auto pb-2 scrollbar-none">
+          {CATEGORIES.map((cat) => (
+            <button
+              key={cat.id}
+              onClick={() => setSelectedCategory(cat.id)}
+              className={`inline-flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold uppercase tracking-wider whitespace-nowrap transition-all duration-200 border ${
+                selectedCategory === cat.id
+                  ? 'bg-primary-600 text-white border-primary-600 shadow-md shadow-primary-500/25 scale-[1.02]'
+                  : 'bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-300 border-slate-200 dark:border-slate-800 hover:border-slate-300 dark:hover:border-slate-700'
+              }`}
+            >
+              <span>{cat.icon}</span>
+              <span>{cat.label}</span>
+            </button>
+          ))}
+        </div>
+
+        {/* Event Cards Grid */}
+        {loading ? (
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+            {Array.from({ length: 8 }).map((_, i) => (
+              <SkeletonCard key={i} />
             ))}
           </div>
-        ) : featuredEvents.length > 0 ? (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {featuredEvents.slice(0, 6).map((event) => (
+        ) : filteredEvents.length > 0 ? (
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+            {filteredEvents.map((event) => (
               <EventCard key={event._id} event={event} />
             ))}
           </div>
         ) : (
-          <div className="text-center py-12 bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700">
-            <svg className="w-16 h-16 mx-auto text-gray-300 dark:text-gray-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5}
-                d="M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 012.25-2.25h13.5A2.25 2.25 0 0121 7.5v11.25m-18 0A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75m-18 0v-7.5A2.25 2.25 0 015.25 9h13.5A2.25 2.25 0 0121 11.25v7.5" />
-            </svg>
-            <h3 className="mt-4 text-lg font-medium text-gray-900 dark:text-white">No featured events yet</h3>
-            <p className="mt-2 text-gray-500 dark:text-gray-400">Check back soon for exciting upcoming events!</p>
-            <Link
-              to="/events"
-              className="mt-6 inline-flex items-center gap-2 px-5 py-2.5 bg-primary-600 text-white font-medium
-                         rounded-lg hover:bg-primary-700 transition-colors"
-            >
-              Browse All Events
-            </Link>
+          <div className="py-16 text-center rounded-3xl bg-white dark:bg-slate-900 border border-dashed border-slate-200 dark:border-slate-800 p-8">
+            <span className="text-4xl mb-3 block">🔍</span>
+            <h3 className="text-lg font-bold text-slate-900 dark:text-white">No events found in this category</h3>
+            <p className="text-sm text-slate-500 dark:text-slate-400 max-w-sm mx-auto mt-1 mb-4">
+              Try switching your category filter or clearing your search keywords.
+            </p>
+            <Button size="sm" variant="secondary" onClick={() => { setSelectedCategory('all'); setSearchQuery(''); }}>
+              Reset Filters
+            </Button>
           </div>
         )}
 
-        {/* Mobile View All Button */}
-        <div className="mt-8 text-center sm:hidden">
-          <Link
-            to="/events"
-            className="inline-flex items-center gap-2 px-6 py-3 text-sm font-medium text-primary-600 dark:text-primary-400
-                       bg-primary-50 dark:bg-primary-900/30 rounded-lg hover:bg-primary-100 dark:hover:bg-primary-900/50 transition-colors"
-          >
-            View All Events
-            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.5 4.5L21 12m0 0l-7.5 7.5M21 12H3" />
-            </svg>
+        <div className="text-center pt-4">
+          <Link to="/events">
+            <Button size="md" variant="outline" className="px-8">
+              View All Campus Events →
+            </Button>
           </Link>
         </div>
       </section>
 
-      {/* ═══════════════ CATEGORIES ═══════════════ */}
-      <section className="bg-white dark:bg-gray-800/50 border-y border-gray-200 dark:border-gray-700">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16 sm:py-20">
-          <div className="text-center mb-12">
-            <h2 className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-white">
-              Browse by Category
+      {/* ─────────────────────────────────────────────────────────────
+          4. HOW IT WORKS: Two-Sided Platform Value
+      ─────────────────────────────────────────────────────────────── */}
+      <section className="bg-slate-100/70 dark:bg-slate-900/50 py-16 sm:py-20 border-y border-slate-200/80 dark:border-slate-800">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-12">
+          <div className="text-center max-w-2xl mx-auto space-y-2">
+            <span className="text-xs font-bold uppercase tracking-wider text-primary-600 dark:text-primary-400">
+              Frictionless Platform
+            </span>
+            <h2 className="text-3xl font-extrabold text-slate-900 dark:text-white tracking-tight">
+              Engineered for Modern Campus Life
             </h2>
-            <p className="mt-2 text-gray-500 dark:text-gray-400">
-              Find events that match your interests
+            <p className="text-sm text-slate-500 dark:text-slate-400">
+              Whether you are discovering something new or hosting hundreds of peers, EventViser eliminates manual ticketing chaos.
             </p>
           </div>
 
-          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
-            {categories.map((cat) => {
-              const slug = cat.slug || cat.name?.toLowerCase();
-              const colorClass = CATEGORY_COLORS[slug] || 'bg-gray-50 text-gray-600 dark:bg-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-600';
-
-              return (
-                <Link
-                  key={slug}
-                  to={`/events?category=${slug}`}
-                  className={`group flex flex-col items-center gap-3 p-6 rounded-xl transition-all duration-200
-                             border border-transparent hover:border-gray-200 dark:hover:border-gray-600 hover:shadow-md ${colorClass}`}
-                >
-                  <div className="transition-transform duration-200 group-hover:scale-110">
-                    {CATEGORY_ICONS[slug] || (
-                      <svg className="w-8 h-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5}
-                          d="M9.568 3H5.25A2.25 2.25 0 003 5.25v4.318c0 .597.237 1.17.659 1.591l9.581 9.581c.699.699 1.78.872 2.607.33a18.095 18.095 0 005.223-5.223c.542-.827.369-1.908-.33-2.607L11.16 3.66A2.25 2.25 0 009.568 3z" />
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M6 6h.008v.008H6V6z" />
-                      </svg>
-                    )}
-                  </div>
-                  <div className="text-center">
-                    <div className="font-semibold text-sm sm:text-base">{cat.name}</div>
-                    {cat.eventCount > 0 && (
-                      <div className="text-xs opacity-75 mt-0.5">{cat.eventCount} {cat.eventCount === 1 ? 'event' : 'events'}</div>
-                    )}
-                  </div>
-                </Link>
-              );
-            })}
-          </div>
-        </div>
-      </section>
-
-      {/* ═══════════════ HOW IT WORKS ═══════════════ */}
-      <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16 sm:py-20">
-        <div className="text-center mb-12">
-          <h2 className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-white">
-            How It Works
-          </h2>
-          <p className="mt-2 text-gray-500 dark:text-gray-400">
-            Get started in three simple steps
-          </p>
-        </div>
-
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-8 lg:gap-12">
-          {HOW_IT_WORKS_STEPS.map((item, index) => (
-            <div key={item.step} className="relative text-center">
-              {/* Connector Line (desktop only) */}
-              {index < HOW_IT_WORKS_STEPS.length - 1 && (
-                <div className="hidden md:block absolute top-12 left-[60%] w-[80%] border-t-2 border-dashed border-gray-300 dark:border-gray-600" />
-              )}
-
-              <div className="relative inline-flex items-center justify-center w-20 h-20 rounded-2xl
-                              bg-primary-50 dark:bg-primary-900/30 text-primary-600 dark:text-primary-400 mb-5">
-                {item.icon}
-                <span className="absolute -top-2 -right-2 w-7 h-7 bg-primary-600 text-white text-xs font-bold
-                                 rounded-full flex items-center justify-center">
-                  {item.step}
-                </span>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+            <div className="p-8 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 shadow-sm space-y-4">
+              <div className="w-12 h-12 rounded-2xl bg-primary-50 dark:bg-primary-950/60 text-primary-600 dark:text-primary-400 flex items-center justify-center font-bold text-xl border border-primary-100 dark:border-primary-900">
+                01
               </div>
-              <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-2">
-                {item.title}
-              </h3>
-              <p className="text-gray-500 dark:text-gray-400 max-w-xs mx-auto">
-                {item.description}
+              <h3 className="text-lg font-bold text-slate-900 dark:text-white">1. Discover & Reserve</h3>
+              <p className="text-sm text-slate-600 dark:text-slate-400 leading-relaxed">
+                Filter by verified student clubs and categories. Reserve your seat in one tap with atomic capacity guards that prevent overbooking.
               </p>
             </div>
-          ))}
+
+            <div className="p-8 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 shadow-sm space-y-4">
+              <div className="w-12 h-12 rounded-2xl bg-coral-50 dark:bg-coral-950/60 text-coral-600 dark:text-coral-400 flex items-center justify-center font-bold text-xl border border-coral-100 dark:border-coral-900">
+                02
+              </div>
+              <h3 className="text-lg font-bold text-slate-900 dark:text-white">2. Get Your QR Ticket</h3>
+              <p className="text-sm text-slate-600 dark:text-slate-400 leading-relaxed">
+                Receive an encrypted digital pass instantly with unique confirmation codes, printable formats, and direct Google Calendar sync.
+              </p>
+            </div>
+
+            <div className="p-8 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 shadow-sm space-y-4">
+              <div className="w-12 h-12 rounded-2xl bg-emerald-50 dark:bg-emerald-950/60 text-emerald-600 dark:text-emerald-400 flex items-center justify-center font-bold text-xl border border-emerald-100 dark:border-emerald-900">
+                03
+              </div>
+              <h3 className="text-lg font-bold text-slate-900 dark:text-white">3. Fast Door Check-In</h3>
+              <p className="text-sm text-slate-600 dark:text-slate-400 leading-relaxed">
+                Organizers verify attendees in seconds with real-time check-in stats and one-click injection-safe CSV attendee exports.
+              </p>
+            </div>
+          </div>
         </div>
       </section>
 
-      {/* ═══════════════ CTA SECTION ═══════════════ */}
-      <section className="bg-linear-to-r from-primary-600 to-primary-800">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16 sm:py-20">
-          <div className="text-center max-w-2xl mx-auto">
-            <h2 className="text-2xl sm:text-3xl font-bold text-white">
-              Ready to Host Your Own Event?
-            </h2>
-            <p className="mt-4 text-lg text-primary-100">
-              Join thousands of campus organizers who use EventViser to create, manage,
-              and promote their events effortlessly.
-            </p>
-            <div className="mt-8 flex flex-col sm:flex-row items-center justify-center gap-4">
-              <Link
-                to="/auth/register"
-                className="w-full sm:w-auto px-8 py-3.5 bg-white text-primary-700 font-semibold rounded-xl
-                           hover:bg-primary-50 transition-colors duration-200 shadow-lg shadow-primary-900/20"
-              >
-                Sign Up as an Organizer
-              </Link>
-              <Link
-                to="/events"
-                className="w-full sm:w-auto px-8 py-3.5 bg-primary-500/30 text-white font-semibold rounded-xl
-                           border border-white/20 hover:bg-primary-500/50 transition-colors duration-200"
-              >
-                Explore Events
-              </Link>
-            </div>
+      {/* ─────────────────────────────────────────────────────────────
+          5. CALL TO ACTION: Host on EventViser
+      ─────────────────────────────────────────────────────────────── */}
+      <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="rounded-3xl bg-gradient-to-r from-primary-900 via-indigo-900 to-slate-950 p-8 sm:p-14 text-center text-white space-y-6 shadow-2xl border border-primary-800/50">
+          <span className="inline-block text-xs font-bold uppercase tracking-widest text-primary-300 bg-primary-800/40 px-3 py-1 rounded-full border border-primary-700/50">
+            For Student Clubs & Organizers
+          </span>
+          <h2 className="text-3xl sm:text-4xl font-black tracking-tight max-w-2xl mx-auto">
+            Ready to host your next conference, workshop, or campus fest?
+          </h2>
+          <p className="text-base text-slate-300 max-w-xl mx-auto font-normal">
+            Publish your event in minutes with our 5-step guided wizard, Cloudinary banner uploads, and automated attendee communications.
+          </p>
+          <div className="pt-2 flex flex-col sm:flex-row items-center justify-center gap-4">
+            <Link to="/organizer/events/create">
+              <Button size="lg" variant="accent" className="w-full sm:w-auto px-8">
+                Host an Event Now
+              </Button>
+            </Link>
+            <Link to="/events">
+              <Button size="lg" variant="secondary" className="w-full sm:w-auto px-8">
+                Browse Directory
+              </Button>
+            </Link>
           </div>
         </div>
       </section>

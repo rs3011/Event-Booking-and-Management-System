@@ -161,6 +161,10 @@ eventSchema.index({ status: 1, date: 1 });
 eventSchema.index({ organizer: 1 });
 eventSchema.index({ category: 1 });
 eventSchema.index({ date: 1 });
+eventSchema.index(
+  { title: 'text', description: 'text', 'location.venue': 'text', 'location.city': 'text' },
+  { weights: { title: 5, 'location.venue': 3, 'location.city': 2, description: 1 }, name: 'EventTextIndex' }
+);
 
 // Virtuals
 eventSchema.virtual('availableSpots').get(function () {

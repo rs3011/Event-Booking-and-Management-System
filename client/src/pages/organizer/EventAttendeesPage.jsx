@@ -39,6 +39,12 @@ const EventAttendeesPage = () => {
   const [checkInLoading, setCheckInLoading] = useState(false);
   const [copiedCode, setCopiedCode] = useState(null);
 
+  // Quick Code / Scanner Check-in state
+  const [quickCodeOpen, setQuickCodeOpen] = useState(false);
+  const [quickCodeInput, setQuickCodeInput] = useState('');
+  const [quickCodeLoading, setQuickCodeLoading] = useState(false);
+  const [quickCheckInSuccess, setQuickCheckInSuccess] = useState(null);
+
   useDocumentTitle(event ? `Attendees — ${event.title}` : 'Attendees');
 
   const fetchRegistrations = useCallback(async () => {
@@ -97,6 +103,69 @@ const EventAttendeesPage = () => {
       toast.error(message);
     } finally {
       setCheckInLoading(false);
+    }
+  };
+
+  const handleQuickCodeSubmit = async (e) => {
+    if (e) e.preventDefault();
+    const cleanCode = quickCodeInput.trim().toUpperCase();
+    if (!cleanCode) {
+      toast.error('Please enter a confirmation code');
+      return;
+    }
+
+    setQuickCodeLoading(true);
+    setQuickCheckInSuccess(null);
+
+    try {
+      const regResponse = await registrationService.getRegistrationByCode(cleanCode);
+      const reg = regResponse.data || regResponse.registration || regResponse;
+
+      if (!reg || !reg._id) {
+        throw new Error('Registration record not found');
+      }
+
+      const regEventId = reg.event?._id || reg.event;
+      if (regEventId && regEventId.toString() !== eventId.toString()) {
+        toast.error('This code belongs to a different event');
+        setQuickCodeLoading(false);
+        return;
+      }
+
+      if (reg.status === 'attended') {
+        toast('Attendee has already checked in', { icon: 'ℹ️' });
+        setQuickCheckInSuccess({
+          attendee: reg.user?.name || 'Attendee',
+          email: reg.user?.email,
+          code: cleanCode,
+          alreadyCheckedIn: true,
+        });
+        setQuickCodeLoading(false);
+        return;
+      }
+
+      if (reg.status === 'cancelled') {
+        toast.error('This registration is cancelled');
+        setQuickCodeLoading(false);
+        return;
+      }
+
+      // Check in attendee
+      await registrationService.checkInAttendee(reg._id);
+      toast.success(`${reg.user?.name || 'Attendee'} checked in successfully!`);
+      setQuickCheckInSuccess({
+        attendee: reg.user?.name || 'Attendee',
+        email: reg.user?.email,
+        code: cleanCode,
+        alreadyCheckedIn: false,
+      });
+      setQuickCodeInput('');
+      await Promise.all([fetchRegistrations(), fetchStats()]);
+    } catch (err) {
+      const message = err.response?.data?.message || err.message || 'Invalid or unrecognized confirmation code';
+      toast.error(message);
+    } finally {
+      setQuickCodeLoading(false);
     }
   };
 
@@ -207,27 +276,45 @@ const EventAttendeesPage = () => {
             </div>
           </div>
 
-          <button
-            onClick={handleExportCSV}
-            disabled={exportLoading}
-            className="inline-flex items-center gap-2 px-4 py-2.5 text-sm font-semibold text-gray-700 dark:text-gray-200
-                       bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600
-                       hover:bg-gray-50 dark:hover:bg-gray-700 rounded-lg transition-colors shadow-sm self-start
-                       disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            {exportLoading ? (
-              <svg className="w-4 h-4 animate-spin text-gray-500" fill="none" viewBox="0 0 24 24">
-                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
-              </svg>
-            ) : (
+          <div className="flex flex-wrap items-center gap-2.5 self-start">
+            <button
+              onClick={() => {
+                setQuickCodeOpen(true);
+                setQuickCheckInSuccess(null);
+              }}
+              className="inline-flex items-center gap-2 px-4 py-2.5 text-sm font-semibold text-white
+                         bg-indigo-600 hover:bg-indigo-700 active:bg-indigo-800 rounded-lg transition-colors shadow-sm"
+              title="Check in attendee by scanning QR or typing confirmation code"
+            >
               <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
-                  d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5M16.5 12L12 16.5m0 0L7.5 12m4.5 4.5V3" />
+                  d="M3.75 4.875c0-.621.504-1.125 1.125-1.125h4.5c.621 0 1.125.504 1.125 1.125v4.5c0 .621-.504 1.125-1.125 1.125h-4.5A1.125 1.125 0 013.75 9.375v-4.5zM3.75 14.625c0-.621.504-1.125 1.125-1.125h4.5c.621 0 1.125.504 1.125 1.125v4.5c0 .621-.504 1.125-1.125 1.125h-4.5a1.125 1.125 0 01-1.125-1.125v-4.5zM13.5 4.875c0-.621.504-1.125 1.125-1.125h4.5c.621 0 1.125.504 1.125 1.125v4.5c0 .621-.504 1.125-1.125 1.125h-4.5A1.125 1.125 0 0113.5 9.375v-4.5zM13.5 14.625c0-.621.504-1.125 1.125-1.125h4.5c.621 0 1.125.504 1.125 1.125v4.5c0 .621-.504 1.125-1.125 1.125h-4.5a1.125 1.125 0 01-1.125-1.125v-4.5z" />
               </svg>
-            )}
-            {exportLoading ? 'Exporting...' : 'Export CSV'}
-          </button>
+              Quick Check-in
+            </button>
+
+            <button
+              onClick={handleExportCSV}
+              disabled={exportLoading}
+              className="inline-flex items-center gap-2 px-4 py-2.5 text-sm font-semibold text-gray-700 dark:text-gray-200
+                         bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600
+                         hover:bg-gray-50 dark:hover:bg-gray-700 rounded-lg transition-colors shadow-sm
+                         disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {exportLoading ? (
+                <svg className="w-4 h-4 animate-spin text-gray-500" fill="none" viewBox="0 0 24 24">
+                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+                </svg>
+              ) : (
+                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
+                    d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5M16.5 12L12 16.5m0 0L7.5 12m4.5 4.5V3" />
+                </svg>
+              )}
+              {exportLoading ? 'Exporting...' : 'Export CSV'}
+            </button>
+          </div>
         </div>
       </div>
 
@@ -555,6 +642,160 @@ const EventAttendeesPage = () => {
                 Check In
               </button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* Quick Code / Scanner Check-in Modal */}
+      {quickCodeOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          <div
+            className="fixed inset-0 bg-black/50 backdrop-blur-sm"
+            onClick={() => !quickCodeLoading && setQuickCodeOpen(false)}
+          />
+          <div className="relative bg-white dark:bg-gray-800 rounded-2xl shadow-xl max-w-lg w-full p-6 z-10 border border-gray-100 dark:border-gray-700">
+            <div className="flex items-center justify-between pb-4 border-b border-gray-100 dark:border-gray-700">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-xl bg-indigo-50 dark:bg-indigo-900/30 flex items-center justify-center text-indigo-600 dark:text-indigo-400">
+                  <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
+                      d="M3.75 4.875c0-.621.504-1.125 1.125-1.125h4.5c.621 0 1.125.504 1.125 1.125v4.5c0 .621-.504 1.125-1.125 1.125h-4.5A1.125 1.125 0 013.75 9.375v-4.5zM3.75 14.625c0-.621.504-1.125 1.125-1.125h4.5c.621 0 1.125.504 1.125 1.125v4.5c0 .621-.504 1.125-1.125 1.125h-4.5a1.125 1.125 0 01-1.125-1.125v-4.5zM13.5 4.875c0-.621.504-1.125 1.125-1.125h4.5c.621 0 1.125.504 1.125 1.125v4.5c0 .621-.504 1.125-1.125 1.125h-4.5A1.125 1.125 0 0113.5 9.375v-4.5zM13.5 14.625c0-.621.504-1.125 1.125-1.125h4.5c.621 0 1.125.504 1.125 1.125v4.5c0 .621-.504 1.125-1.125 1.125h-4.5a1.125 1.125 0 01-1.125-1.125v-4.5z" />
+                  </svg>
+                </div>
+                <div>
+                  <h3 className="text-lg font-bold text-gray-900 dark:text-white">
+                    Quick Code / QR Check-in
+                  </h3>
+                  <p className="text-xs text-gray-500 dark:text-gray-400">
+                    Scan QR code or type confirmation code to verify entry
+                  </p>
+                </div>
+              </div>
+              <button
+                onClick={() => setQuickCodeOpen(false)}
+                className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 p-1.5 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+              >
+                <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+
+            <form onSubmit={handleQuickCodeSubmit} className="mt-5 space-y-4">
+              <div>
+                <label className="block text-xs font-semibold uppercase tracking-wider text-gray-700 dark:text-gray-300 mb-1.5">
+                  Confirmation Code
+                </label>
+                <div className="relative">
+                  <input
+                    type="text"
+                    value={quickCodeInput}
+                    onChange={(e) => setQuickCodeInput(e.target.value)}
+                    placeholder="EV-XXXXXXXX"
+                    autoFocus
+                    maxLength={14}
+                    className="w-full px-4 py-3 bg-gray-50 dark:bg-gray-900 border border-gray-300 dark:border-gray-600
+                               rounded-xl font-mono text-base font-bold text-gray-900 dark:text-white uppercase tracking-wider
+                               focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none"
+                  />
+                  <div className="absolute right-2.5 top-1/2 -translate-y-1/2 flex items-center gap-1.5">
+                    {quickCodeInput && (
+                      <button
+                        type="button"
+                        onClick={() => setQuickCodeInput('')}
+                        className="p-1 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 rounded"
+                      >
+                        <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                        </svg>
+                      </button>
+                    )}
+                    <button
+                      type="button"
+                      onClick={async () => {
+                        try {
+                          const text = await navigator.clipboard.readText();
+                          if (text) setQuickCodeInput(text.trim());
+                        } catch {
+                          toast.error('Unable to read clipboard');
+                        }
+                      }}
+                      className="px-2 py-1 text-xs font-medium bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors"
+                      title="Paste from clipboard"
+                    >
+                      Paste
+                    </button>
+                  </div>
+                </div>
+              </div>
+
+              {/* Feedback Banner */}
+              {quickCheckInSuccess && (
+                <div
+                  className={`p-4 rounded-xl border ${
+                    quickCheckInSuccess.alreadyCheckedIn
+                      ? 'bg-amber-50 dark:bg-amber-900/20 border-amber-200 dark:border-amber-800 text-amber-800 dark:text-amber-200'
+                      : 'bg-emerald-50 dark:bg-emerald-900/20 border-emerald-200 dark:border-emerald-800 text-emerald-800 dark:text-emerald-200'
+                  }`}
+                >
+                  <div className="flex items-start gap-3">
+                    <span className="text-xl">
+                      {quickCheckInSuccess.alreadyCheckedIn ? '⚠️' : '✅'}
+                    </span>
+                    <div>
+                      <p className="font-semibold text-sm">
+                        {quickCheckInSuccess.alreadyCheckedIn
+                          ? `${quickCheckInSuccess.attendee} is already checked in!`
+                          : `Successfully checked in ${quickCheckInSuccess.attendee}!`}
+                      </p>
+                      {quickCheckInSuccess.email && (
+                        <p className="text-xs opacity-80 mt-0.5">{quickCheckInSuccess.email}</p>
+                      )}
+                      <p className="text-xs font-mono mt-1 opacity-70">
+                        Code: {quickCheckInSuccess.code}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              <div className="flex gap-3 pt-2">
+                <button
+                  type="button"
+                  onClick={() => setQuickCodeOpen(false)}
+                  disabled={quickCodeLoading}
+                  className="flex-1 px-4 py-2.5 text-sm font-medium text-gray-700 dark:text-gray-300
+                             bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600
+                             rounded-lg transition-colors disabled:opacity-50"
+                >
+                  Close
+                </button>
+                <button
+                  type="submit"
+                  disabled={quickCodeLoading || !quickCodeInput.trim()}
+                  className="flex-1 px-4 py-2.5 text-sm font-semibold text-white rounded-lg transition-colors
+                             bg-indigo-600 hover:bg-indigo-700 active:bg-indigo-800 focus:ring-2 focus:ring-indigo-500
+                             disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 shadow-sm"
+                >
+                  {quickCodeLoading ? (
+                    <>
+                      <svg className="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24">
+                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+                      </svg>
+                      Verifying...
+                    </>
+                  ) : (
+                    <>
+                      <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4.5 12.75l6 6 9-13.5" />
+                      </svg>
+                      Check In Attendee
+                    </>
+                  )}
+                </button>
+              </div>
+            </form>
           </div>
         </div>
       )}

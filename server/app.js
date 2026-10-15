@@ -14,8 +14,12 @@ const env = require('./config/env');
 const { version } = require('./package.json');
 const { globalLimiter } = require('./middlewares/rateLimiter');
 const errorHandler = require('./middlewares/errorHandler');
+const { initSentry } = require('./utils/sentry');
 
 const app = express();
+
+// Initialize Sentry error tracking if configured
+initSentry(app);
 
 // Trust first proxy (Render, Heroku, etc.) so express-rate-limit reads real client IP
 app.set('trust proxy', 1);
@@ -46,12 +50,14 @@ if (env.NODE_ENV === 'production') {
   app.use(helmet({ contentSecurityPolicy: false }));
 }
 
-// CORS — supports comma-separated CLIENT_URL for multiple origins
-const allowedOrigins = env.CLIENT_URL.split(',').map((o) => o.trim()).filter(Boolean);
+// CORS — supports comma-separated CLIENT_URL for multiple origins, plus standard defaults
+const defaultOrigins = ['http://localhost:5173', 'https://eventviser.netlify.app'];
+const configuredOrigins = env.CLIENT_URL ? env.CLIENT_URL.split(',').map((o) => o.trim()).filter(Boolean) : [];
+const allowedOrigins = Array.from(new Set([...defaultOrigins, ...configuredOrigins]));
 app.use(
   cors({
     origin: (origin, callback) => {
-      if (!origin || allowedOrigins.includes(origin)) {
+      if (!origin || allowedOrigins.includes(origin) || allowedOrigins.some((o) => origin.startsWith(o))) {
         callback(null, true);
       } else {
         callback(new Error('Not allowed by CORS'));
@@ -223,12 +229,28 @@ app.get('/', (_req, res) => {
 </html>`);
 });
 
-// Health check
+// Health check — deep health diagnostics
 app.get('/api/health', (_req, res) => {
-  res.status(200).json({
-    success: true,
-    message: 'API is running',
+  const mongoose = require('mongoose');
+  const dbState = mongoose.connection.readyState;
+  const statusMap = { 0: 'disconnected', 1: 'connected', 2: 'connecting', 3: 'disconnecting' };
+  const isHealthy = dbState === 1;
+
+  res.status(isHealthy ? 200 : 503).json({
+    success: isHealthy,
+    status: isHealthy ? 'healthy' : 'degraded',
+    service: 'eventviser-api',
+    version,
+    uptime: Math.floor(process.uptime()),
     timestamp: new Date().toISOString(),
+    database: {
+      status: statusMap[dbState] || 'unknown',
+      connected: isHealthy,
+    },
+    system: {
+      memoryUsageMB: Math.round(process.memoryUsage().rss / 1024 / 1024),
+      nodeVersion: process.version,
+    },
   });
 });
 
